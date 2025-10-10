@@ -164,33 +164,22 @@ list(
     }
   ),
   # === METAGENOMIC ANALYSIS PHASE ===
-  # 1. Retrieve genomic sequences for marine species
+  # 1. Retrieve genomic sequences for marine species using biomartr
   tar_target(
     genomic_sequences,
     {
-      message("Starting genomic sequence retrieval...")
+      message("Starting genomic sequence retrieval with biomartr...")
       
-      # Retrieve CDS sequences (coding sequences) - more manageable than full genomes
-      cds_results <- retrieve_marine_genomes(
+      # Retrieve complete metagenomic data
+      # Options: "genome", "proteome", "cds", "gff", "rna"
+      metagenomic_data <- retrieve_complete_metagenomic_data(
         species_list = MARINE_SPECIES,
-        db = "refseq",
-        seq_type = "cds",
-        out_dir = "data/raw/genomic/cds"
+        db = "refseq",  # Can also try "genbank" or "ensembl"
+        data_types = c("proteome", "cds", "gff"),  # Start with these, add "genome" if needed
+        out_dir = "data/raw/genomic"
       )
       
-      # Also try to get proteomes
-      proteome_results <- retrieve_marine_genomes(
-        species_list = MARINE_SPECIES,
-        db = "refseq",
-        seq_type = "proteome",
-        out_dir = "data/raw/genomic/proteome"
-      )
-      
-      list(
-        cds = cds_results,
-        proteome = proteome_results,
-        retrieval_date = Sys.time()
-      )
+      metagenomic_data
     }
   ),
   

@@ -47,7 +47,9 @@ targets_packages <- c(
   "nodbi",
   ## bioconductor
   "BiocManager",
-  "biomaRt",
+  "Biostrings",
+  # "biomaRt",
+  "biomartr",
   # "BarcodingR",
   "wikitaxa",
   "ggplot2",
