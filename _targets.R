@@ -28,7 +28,7 @@ for (pkg in optional_packages) {
 
 # Source all enhanced R functions
 source("R/data_acquisition.R")
-source("R/taxonomic_management.R") 
+source("R/taxonomic_management.R")
 source("R/geospatial_processing.R")
 source("R/data_cleaning.R")
 source("R/database_integration.R")
@@ -36,7 +36,11 @@ source("R/evolutionary_analysis.R")
 source("R/metagenomic_analysis.R")
 
 # Configuration parameters for the marine biodiversity pipeline
-MARINE_SPECIES <- c("Acropora cervicornis", "Acropora palmata", "Porites astreoides")
+MARINE_SPECIES <- c(
+  "Acropora cervicornis",
+  "Acropora palmata",
+  "Porites astreoides"
+  )
 STUDY_REGION <- list(
   min_lat = 24.0, max_lat = 26.0,
   min_lon = -82.0, max_lon = -80.0
@@ -864,6 +868,6 @@ list(
     reporte_biodiversidad,
     path = "./reportes/analisis_biodiversidad_marina.qmd",
     quiet = FALSE
-  ),
+  )
 
 )
