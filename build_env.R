@@ -54,13 +54,15 @@ targets_packages <- c(
   "plotly",
   "jsonlite",
   "DBI",
-  "duckdb"
+  "duckdb",
+  "prism",
+  "geotargets"
 )
 
 # Optional packages (only if available)
 optional_packages <- c(
   "biomaRt",
-  # "wikitaxa",
+  "wikitaxa",
   "prism",
   "myTAI",
   "geotargets"
@@ -75,6 +77,13 @@ cat(paste(" -", all_packages, collapse = "\n"), "\n\n")
 rix(
   r_ver = "latest-upstream",
   r_pkgs = all_packages,
+  git_pkgs = list(
+    list(
+      package_name = "myTAI",
+      repo_url = "https://github.com/drostlab/myTAI/",
+      commit = "656bb16"
+    )
+  ),
   system_pkgs = c(
     "git", 
     # "git-filter-repo",

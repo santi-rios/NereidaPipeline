@@ -44,7 +44,7 @@ STUDY_REGION <- list(
 
 # Enhanced Marine Biodiversity Research Pipeline
 list(
-  
+
   # === DATA ACQUISITION PHASE ===
   
   # 1. Collect occurrence data from multiple sources
@@ -159,6 +159,185 @@ list(
       }
     }
   ),
+  # === METAGENOMIC ANALYSIS PHASE ===
+  # 1. Retrieve genomic sequences for marine species
+  tar_target(
+    genomic_sequences,
+    {
+      message("Starting genomic sequence retrieval...")
+      
+      # Retrieve CDS sequences (coding sequences) - more manageable than full genomes
+      cds_results <- retrieve_marine_genomes(
+        species_list = MARINE_SPECIES,
+        db = "refseq",
+        seq_type = "cds",
+        out_dir = "data/raw/genomic/cds"
+      )
+      
+      # Also try to get proteomes
+      proteome_results <- retrieve_marine_genomes(
+        species_list = MARINE_SPECIES,
+        db = "refseq",
+        seq_type = "proteome",
+        out_dir = "data/raw/genomic/proteome"
+      )
+      
+      list(
+        cds = cds_results,
+        proteome = proteome_results,
+        retrieval_date = Sys.time()
+      )
+    }
+  ),
+  
+  # # 2. Get assembly statistics for quality assessment
+  # tar_target(
+  #   assembly_statistics,
+  #   {
+  #     message("Retrieving assembly statistics...")
+      
+  #     stats <- get_assembly_stats(
+  #       species_list = MARINE_SPECIES,
+  #       db = "refseq",
+  #       out_dir = "data/raw/genomic/assembly_stats"
+  #     )
+      
+  #     if (!is.null(stats) && nrow(stats) > 0) {
+  #       # Assess quality
+  #       quality_assessment <- assess_assembly_quality(
+  #         assembly_stats = stats,
+  #         quality_threshold = list(
+  #           min_N50 = 10000,
+  #           max_gaps = 1000,
+  #           min_completeness = 0.9
+  #         )
+  #       )
+        
+  #       # Save quality assessment
+  #       write.csv(
+  #         quality_assessment,
+  #         "data/processed/genomic/assembly_quality.csv",
+  #         row.names = FALSE
+  #       )
+        
+  #       quality_assessment
+  #     } else {
+  #       NULL
+  #     }
+  #   }
+  # ),
+  # # 3. Create phylostratigraphic maps for gene age analysis
+  # tar_target(
+  #   phylostrat_maps,
+  #   {
+  #     message("Creating phylostratigraphic maps...")
+      
+  #     phylostrat_results <- list()
+      
+  #     # Only create maps for species with available genomic data
+  #     if (!is.null(genomic_sequences$cds)) {
+  #       for (species in names(genomic_sequences$cds)) {
+  #         if (genomic_sequences$cds[[species]]$status == "success") {
+            
+  #           phylostrat_map <- create_phylostratigraphic_map(
+  #             species = species,
+  #             genome_file = genomic_sequences$cds[[species]]$file,
+  #             out_dir = "data/processed/phylostrat"
+  #           )
+            
+  #           if (!is.null(phylostrat_map)) {
+  #             phylostrat_results[[species]] <- phylostrat_map
+  #           }
+  #         }
+  #       }
+  #     }
+      
+  #     phylostrat_results
+  #   }
+  # ),
+  
+  # # 4. Integrate metagenomic data with occurrence data
+  # tar_target(
+  #   integrated_metagenomic_data,
+  #   {
+  #     message("Integrating metagenomic and occurrence data...")
+      
+  #     # Prepare genomic data summary
+  #     genomic_summary <- list()
+      
+  #     if (!is.null(genomic_sequences)) {
+  #       for (species in MARINE_SPECIES) {
+  #         genomic_summary[[species]] <- list(
+  #           cds_available = !is.null(genomic_sequences$cds[[species]]) &&
+  #                          genomic_sequences$cds[[species]]$status == "success",
+  #           proteome_available = !is.null(genomic_sequences$proteome[[species]]) &&
+  #                               genomic_sequences$proteome[[species]]$status == "success",
+  #           quality = if (!is.null(assembly_statistics)) {
+  #             quality_row <- assembly_statistics[assembly_statistics$species == species, ]
+  #             if (nrow(quality_row) > 0) quality_row$overall_quality else NA
+  #           } else {
+  #             NA
+  #           }
+  #         )
+  #       }
+  #     }
+      
+  #     # Integrate with occurrence data
+  #     integrated_data <- integrate_metagenomic_occurrences(
+  #       occurrence_data = cleaned_occurrences,
+  #       genomic_data = genomic_summary,
+  #       taxonomic_data = taxonomic_data
+  #     )
+      
+  #     integrated_data
+  #   }
+  # ),
+  
+  # # 5. Generate conservation priorities based on metagenomic data
+  # tar_target(
+  #   metagenomic_conservation_priorities,
+  #   {
+  #     message("Generating metagenomic-based conservation priorities...")
+      
+  #     priorities <- generate_metagenomic_priorities(
+  #       integrated_data = integrated_metagenomic_data,
+  #       criteria = list(
+  #         genome_available = 10,
+  #         high_quality = 5,
+  #         rare_species = 15,
+  #         evolutionary_unique = 20
+  #       )
+  #     )
+      
+  #     # Save priorities
+  #     if (!is.null(priorities)) {
+  #       write.csv(
+  #         priorities,
+  #         "data/processed/conservation/metagenomic_priorities.csv",
+  #         row.names = FALSE
+  #       )
+  #     }
+      
+  #     priorities
+  #   }
+  # ),
+  
+  # # 6. Evolutionary transcriptomics analysis (if expression data available)
+  # tar_target(
+  #   evolutionary_transcriptomics,
+  #   {
+  #     message("Note: Evolutionary transcriptomics requires expression data")
+  #     message("This is a placeholder for when expression data becomes available")
+      
+  #     # Placeholder for future implementation
+  #     # Would require RNAseq or microarray data
+      
+  #     list(
+  #       status = "not_implemented",
+  #       message = "Requires expression data for phylostratigraphic expression sets"
+  #     )
+  #   }
+  # ),
   # === DATA CLEANING PHASE ===
   # 4. Clean and validate occurrence data
   tar_target(
@@ -685,5 +864,6 @@ list(
     reporte_biodiversidad,
     path = "./reportes/analisis_biodiversidad_marina.qmd",
     quiet = FALSE
-  )
+  ),
+
 )
