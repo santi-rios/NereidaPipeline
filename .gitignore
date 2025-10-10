@@ -1,0 +1,29 @@
+# R and RStudio files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# targets
+_targets/
+!_targets.R
+
+# Large data files
+*.rds
+*.RData
+data/raw/*.csv
+data/raw/obis/*.csv
+data/processed/*.csv
+data/raw/environmental/*.tif
+data/raw/environmental/*.asc
+
+# Nix
+result
+result-*
+*.backup
+
+# System
+.DS_Store
+*.swp
+*~
