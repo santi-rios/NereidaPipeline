@@ -7,26 +7,10 @@ echo "🔄 Nix Environment Update Workflow"
 echo "=================================="
 echo ""
 
-# Function to extract packages from _targets.R
-extract_packages() {
-    echo "📦 Extracting packages from _targets.R..."
-    nix-shell -p R --run '
-    R --vanilla --quiet -e "
-    targets_file <- readLines(\"_targets.R\")
-    library_lines <- grep(\"library\\(\", targets_file, value = TRUE)
-    packages <- gsub(\".*library\\(([^)]+)\\).*\", \"\\1\", library_lines)
-    packages <- unique(packages)
-    packages <- gsub(\"[\\\"\\']\", \"\", packages)
-    packages <- packages[packages != \"\"]
-    cat(packages, sep = \", \")
-    " 2>/dev/null
-    '
-}
-
-# Step 1: Check current packages
-echo "Step 1: Current packages in _targets.R:"
-TARGETS_PACKAGES=$(extract_packages)
-echo "  $TARGETS_PACKAGES"
+# Step 1: Show current packages (simple version)
+echo "Step 1: Verificando paquetes en _targets.R..."
+echo ""
+echo "Los paquetes se verificarán automáticamente en el paso 5."
 echo ""
 
 # Step 2: Ask if build_env.R needs updating

@@ -33,6 +33,7 @@ core_packages <- c(
   "targets",
   "tarchetypes", 
   "dplyr",
+  "quarto",
   "languageserver"  # For VSCode
 )
 
@@ -44,8 +45,13 @@ targets_packages <- c(
   "taxa",
   "terra",
   "nodbi",
+  ## bioconductor
+  "BiocManager",
   "biomaRt",
+  # "BarcodingR",
+  "wikitaxa",
   "ggplot2",
+  "plotly",
   "jsonlite",
   "DBI",
   "duckdb"
@@ -53,8 +59,8 @@ targets_packages <- c(
 
 # Optional packages (only if available)
 optional_packages <- c(
-  "biomartr",
-  "wikitaxa",
+  "biomaRt",
+  # "wikitaxa",
   "prism",
   "myTAI",
   "geotargets"
@@ -70,10 +76,11 @@ rix(
   r_ver = "latest-upstream",
   r_pkgs = all_packages,
   system_pkgs = c(
-    "git", "git-filter-repo",
+    "git", 
+    # "git-filter-repo",
     "python3",
-    "quarto",
-    "bfg-repo-cleaner" # alternative to git-filter-branch
+    "quarto"
+    # "bfg-repo-cleaner" # alternative to git-filter-branch
   ),
   tex_pkgs = c("amsmath"),
   ide = "none",

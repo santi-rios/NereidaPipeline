@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.34">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Laboratorio de Biodiversidad Marina">
+
+<title>Análisis de Biodiversidad Marina: Pipeline Integrado para Conservación y Evolución</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="analisis_biodiversidad_marina_files/libs/clipboard/clipboard.min.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="analisis_biodiversidad_marina_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="analisis_biodiversidad_marina_files/libs/quarto-html/popper.min.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/quarto-html/anchor.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="analisis_biodiversidad_marina_files/libs/quarto-html/quarto-syntax-highlighting-c8ad9e5dbd60b7b70b38521ab19b7da4.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="analisis_biodiversidad_marina_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="analisis_biodiversidad_marina_files/libs/bootstrap/bootstrap-1e911b5738015e78a4714f88faae126b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="analisis_biodiversidad_marina_files/libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/leaflet-1.3.1/leaflet.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/leaflet-1.3.1/leaflet.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/proj4-2.6.2/proj4.min.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/leaflet-binding-2.2.2/leaflet.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/leaflet-providers-2.0.0/leaflet-providers_2.0.0.js"></script>
+<script src="analisis_biodiversidad_marina_files/libs/leaflet-providers-plugin-2.2.2/leaflet-providers-plugin.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/datatables-binding-0.33/datatables.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
+<link href="analisis_biodiversidad_marina_files/libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/nouislider-7.0.10/jquery.nouislider.min.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/nouislider-7.0.10/jquery.nouislider.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/selectize-0.12.0/selectize.bootstrap3.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/selectize-0.12.0/selectize.min.js"></script>
+<link href="analisis_biodiversidad_marina_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+<script src="analisis_biodiversidad_marina_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Tabla de contenidos</h2>
+   
+  <ul>
+  <li><a href="#resumen-ejecutivo" id="toc-resumen-ejecutivo" class="nav-link active" data-scroll-target="#resumen-ejecutivo"><span class="header-section-number">0.1</span> Resumen Ejecutivo</a>
+  <ul class="collapse">
+  <li><a href="#estado-del-pipeline" id="toc-estado-del-pipeline" class="nav-link" data-scroll-target="#estado-del-pipeline"><span class="header-section-number">0.1.1</span> Estado del pipeline</a></li>
+  <li><a href="#datos-disponibles" id="toc-datos-disponibles" class="nav-link" data-scroll-target="#datos-disponibles"><span class="header-section-number">0.1.2</span> Datos disponibles</a></li>
+  <li><a href="#análisis-de-datos-de-ocurrencia" id="toc-análisis-de-datos-de-ocurrencia" class="nav-link" data-scroll-target="#análisis-de-datos-de-ocurrencia"><span class="header-section-number">0.1.3</span> Análisis de Datos de Ocurrencia</a></li>
+  </ul></li>
+  <li><a href="#introducción" id="toc-introducción" class="nav-link" data-scroll-target="#introducción"><span class="header-section-number">0.2</span> Introducción</a>
+  <ul class="collapse">
+  <li><a href="#el-paradigma-de-la-investigación-reproducible" id="toc-el-paradigma-de-la-investigación-reproducible" class="nav-link" data-scroll-target="#el-paradigma-de-la-investigación-reproducible"><span class="header-section-number">0.2.1</span> 1. El Paradigma de la Investigación Reproducible</a></li>
+  <li><a href="#gestión-del-ambiente-computacional-con-nix" id="toc-gestión-del-ambiente-computacional-con-nix" class="nav-link" data-scroll-target="#gestión-del-ambiente-computacional-con-nix"><span class="header-section-number">0.2.2</span> 2. Gestión del Ambiente Computacional con Nix</a></li>
+  <li><a href="#automatización-de-pipelines-con-targets" id="toc-automatización-de-pipelines-con-targets" class="nav-link" data-scroll-target="#automatización-de-pipelines-con-targets"><span class="header-section-number">0.2.3</span> 3. Automatización de Pipelines con <code>{targets}</code></a></li>
+  <li><a href="#orquestación-del-flujo-de-trabajo-con-make" id="toc-orquestación-del-flujo-de-trabajo-con-make" class="nav-link" data-scroll-target="#orquestación-del-flujo-de-trabajo-con-make"><span class="header-section-number">0.2.4</span> 4. Orquestación del Flujo de Trabajo con <code>Make</code></a></li>
+  <li><a href="#cómo-integrar-estas-referencias-en-su-reporte" id="toc-cómo-integrar-estas-referencias-en-su-reporte" class="nav-link" data-scroll-target="#cómo-integrar-estas-referencias-en-su-reporte"><span class="header-section-number">0.2.5</span> Cómo Integrar Estas Referencias en su Reporte</a></li>
+  <li><a href="#objetivos" id="toc-objetivos" class="nav-link" data-scroll-target="#objetivos"><span class="header-section-number">0.2.6</span> Objetivos</a></li>
+  </ul></li>
+  <li><a href="#metodología" id="toc-metodología" class="nav-link" data-scroll-target="#metodología"><span class="header-section-number">0.3</span> Metodología</a>
+  <ul class="collapse">
+  <li><a href="#crear-el-ambiente-con-nix" id="toc-crear-el-ambiente-con-nix" class="nav-link" data-scroll-target="#crear-el-ambiente-con-nix"><span class="header-section-number">0.3.1</span> Crear el ambiente con Nix</a></li>
+  </ul></li>
+  <li><a href="#repository-cleanup-and-github-push-issues" id="toc-repository-cleanup-and-github-push-issues" class="nav-link" data-scroll-target="#repository-cleanup-and-github-push-issues"><span class="header-section-number">1</span> Repository Cleanup and GitHub Push Issues</a>
+  <ul class="collapse">
+  <li><a href="#root-issues" id="toc-root-issues" class="nav-link" data-scroll-target="#root-issues"><span class="header-section-number">1.1</span> Root Issues</a></li>
+  <li><a href="#complete-solution" id="toc-complete-solution" class="nav-link" data-scroll-target="#complete-solution"><span class="header-section-number">1.2</span> Complete Solution</a></li>
+  <li><a href="#using-the-solution" id="toc-using-the-solution" class="nav-link" data-scroll-target="#using-the-solution"><span class="header-section-number">1.3</span> Using the solution</a></li>
+  <li><a href="#updating-the-build_env.r-file" id="toc-updating-the-build_env.r-file" class="nav-link" data-scroll-target="#updating-the-build_env.r-file"><span class="header-section-number">1.4</span> Updating the build_env.R file</a>
+  <ul class="collapse">
+  <li><a href="#adquisición-de-datos" id="toc-adquisición-de-datos" class="nav-link" data-scroll-target="#adquisición-de-datos"><span class="header-section-number">1.4.1</span> Adquisición de Datos</a></li>
+  <li><a href="#limpieza-y-validación-de-datos" id="toc-limpieza-y-validación-de-datos" class="nav-link" data-scroll-target="#limpieza-y-validación-de-datos"><span class="header-section-number">1.4.2</span> Limpieza y Validación de Datos</a></li>
+  </ul></li>
+  <li><a href="#resultados" id="toc-resultados" class="nav-link" data-scroll-target="#resultados"><span class="header-section-number">1.5</span> Resultados</a>
+  <ul class="collapse">
+  <li><a href="#distribución-espacial-de-especies" id="toc-distribución-espacial-de-especies" class="nav-link" data-scroll-target="#distribución-espacial-de-especies"><span class="header-section-number">1.5.1</span> Distribución Espacial de Especies</a></li>
+  <li><a href="#análisis-de-idoneidad-de-hábitat" id="toc-análisis-de-idoneidad-de-hábitat" class="nav-link" data-scroll-target="#análisis-de-idoneidad-de-hábitat"><span class="header-section-number">1.5.2</span> Análisis de Idoneidad de Hábitat</a></li>
+  <li><a href="#análisis-espacial-comprehensivo" id="toc-análisis-espacial-comprehensivo" class="nav-link" data-scroll-target="#análisis-espacial-comprehensivo"><span class="header-section-number">1.5.3</span> Análisis Espacial Comprehensivo</a></li>
+  <li><a href="#nicho-ambiental" id="toc-nicho-ambiental" class="nav-link" data-scroll-target="#nicho-ambiental"><span class="header-section-number">1.5.4</span> Nicho Ambiental</a></li>
+  </ul></li>
+  <li><a href="#base-de-datos-integrada" id="toc-base-de-datos-integrada" class="nav-link" data-scroll-target="#base-de-datos-integrada"><span class="header-section-number">1.6</span> Base de Datos Integrada</a></li>
+  <li><a href="#implicaciones-para-la-conservación" id="toc-implicaciones-para-la-conservación" class="nav-link" data-scroll-target="#implicaciones-para-la-conservación"><span class="header-section-number">1.7</span> I===mplicaciones para la Conservación</a>
+  <ul class="collapse">
+  <li><a href="#especies-prioritarias" id="toc-especies-prioritarias" class="nav-link" data-scroll-target="#especies-prioritarias"><span class="header-section-number">1.7.1</span> Especies Prioritarias</a></li>
+  <li><a href="#recomendaciones-de-manejo" id="toc-recomendaciones-de-manejo" class="nav-link" data-scroll-target="#recomendaciones-de-manejo"><span class="header-section-number">1.7.2</span> Recomendaciones de Manejo</a></li>
+  </ul></li>
+  <li><a href="#análisis-evolutivo-y-adaptación" id="toc-análisis-evolutivo-y-adaptación" class="nav-link" data-scroll-target="#análisis-evolutivo-y-adaptación"><span class="header-section-number">1.8</span> Análisis Evolutivo y Adaptación</a></li>
+  <li><a href="#limitaciones-y-perspectivas-futuras" id="toc-limitaciones-y-perspectivas-futuras" class="nav-link" data-scroll-target="#limitaciones-y-perspectivas-futuras"><span class="header-section-number">1.9</span> Limitaciones y Perspectivas Futuras</a>
+  <ul class="collapse">
+  <li><a href="#limitaciones-del-estudio" id="toc-limitaciones-del-estudio" class="nav-link" data-scroll-target="#limitaciones-del-estudio"><span class="header-section-number">1.9.1</span> Limitaciones del Estudio</a></li>
+  <li><a href="#direcciones-futuras" id="toc-direcciones-futuras" class="nav-link" data-scroll-target="#direcciones-futuras"><span class="header-section-number">1.9.2</span> Direcciones Futuras</a></li>
+  </ul></li>
+  <li><a href="#conclusiones" id="toc-conclusiones" class="nav-link" data-scroll-target="#conclusiones"><span class="header-section-number">1.10</span> Conclusiones</a>
+  <ul class="collapse">
+  <li><a href="#impacto-para-la-conservación" id="toc-impacto-para-la-conservación" class="nav-link" data-scroll-target="#impacto-para-la-conservación"><span class="header-section-number">1.10.1</span> Impacto para la Conservación</a></li>
+  </ul></li>
+  <li><a href="#referencias" id="toc-referencias" class="nav-link" data-scroll-target="#referencias"><span class="header-section-number">1.11</span> Referencias</a></li>
+  <li><a href="#información-de-sesión" id="toc-información-de-sesión" class="nav-link" data-scroll-target="#información-de-sesión"><span class="header-section-number">1.12</span> Información de Sesión</a></li>
+  <li><a href="#exploración-para-solucionar-fechas" id="toc-exploración-para-solucionar-fechas" class="nav-link" data-scroll-target="#exploración-para-solucionar-fechas"><span class="header-section-number">1.13</span> Exploración para solucionar fechas</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Análisis de Biodiversidad Marina: Pipeline Integrado para Conservación y Evolución</h1>
+<p class="subtitle lead">Reporte Técnico de Análisis Espacial y Evolutivo de Especies Marinas</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Autor/a</div>
+    <div class="quarto-title-meta-contents">
+             <p>Laboratorio de Biodiversidad Marina </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Fecha de publicación</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">10 de octubre de 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><span class="citation" data-cites="zhang2017">(<a href="#ref-zhang2017" role="doc-biblioref">Zhang et&nbsp;al. 2017</a>)</span></p>
+<section id="resumen-ejecutivo" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="resumen-ejecutivo"><span class="header-section-number">0.1</span> Resumen Ejecutivo</h2>
+<p>Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo.</p>
+<p><strong>Especies analizadas:</strong> 3</p>
+<p><strong>Registros procesados:</strong> 249</p>
+<p><strong>Estado del pipeline:</strong> completed</p>
+<p><strong>Fecha de análisis:</strong> 10/10/2025</p>
+<section id="estado-del-pipeline" class="level3" data-number="0.1.1">
+<h3 data-number="0.1.1" class="anchored" data-anchor-id="estado-del-pipeline"><span class="header-section-number">0.1.1</span> Estado del pipeline</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Show pipeline status</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Estado de los objetos del pipeline:</span><span class="sc">\n\n</span><span class="st">"</span>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Estado de los objetos del pipeline:</code></pre>
+</div>
+<details class="code-fold">
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (target <span class="cf">in</span> <span class="fu">names</span>(loaded_targets)) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  status <span class="ot">&lt;-</span> <span class="cf">if</span> (loaded_targets[[target]]) <span class="st">"✓ Disponible"</span> <span class="cf">else</span> <span class="st">"✗ No disponible"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"-"</span>, target, <span class="st">":"</span>, status, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>- obis_occurrences : ✓ Disponible 
+- gbif_occurrences : ✓ Disponible 
+- cleaned_occurrences : ✓ Disponible 
+- spatial_analysis : ✓ Disponible 
+- habitat_models : ✓ Disponible 
+- data_summaries : ✓ Disponible 
+- pipeline_report : ✓ Disponible </code></pre>
+</div>
+<details class="code-fold">
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check targets status</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">"targets"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Estado general del pipeline:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_progress</span>() <span class="sc">|&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(progress) <span class="sc">|&gt;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Estado"</span>, <span class="st">"Número de targets"</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Estado general del pipeline:</code></pre>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Estado</th>
+<th style="text-align: right;">Número de targets</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">dispatched</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">skipped</td>
+<td style="text-align: right;">14</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="datos-disponibles" class="level3" data-number="0.1.2">
+<h3 data-number="0.1.2" class="anchored" data-anchor-id="datos-disponibles"><span class="header-section-number">0.1.2</span> Datos disponibles</h3>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Resumen de objetos del pipeline</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Objeto</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Disponible</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Tipo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">obis_occurrences</td>
+<td style="text-align: left;">obis_occurrences</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">data.frame ( 46848 filas)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">gbif_occurrences</td>
+<td style="text-align: left;">gbif_occurrences</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">data.frame ( 0 filas)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cleaned_occurrences</td>
+<td style="text-align: left;">cleaned_occurrences</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">data.frame ( 249 filas)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">spatial_analysis</td>
+<td style="text-align: left;">spatial_analysis</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">lista ( 4 elementos)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">habitat_models</td>
+<td style="text-align: left;">habitat_models</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">lista ( 3 elementos)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">data_summaries</td>
+<td style="text-align: left;">data_summaries</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">lista ( 4 elementos)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">pipeline_report</td>
+<td style="text-align: left;">pipeline_report</td>
+<td style="text-align: left;">Sí</td>
+<td style="text-align: left;">lista ( 7 elementos)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="análisis-de-datos-de-ocurrencia" class="level3" data-number="0.1.3">
+<h3 data-number="0.1.3" class="anchored" data-anchor-id="análisis-de-datos-de-ocurrencia"><span class="header-section-number">0.1.3</span> Análisis de Datos de Ocurrencia</h3>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>### Resumen de Datos Limpios
+
+- **Total de registros:**  249 
+- **Especies únicas:**  3 
+- **Rango temporal:**  1969 - 2023 </code></pre>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Resumen por especie</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">scientificName</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Registros</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Años únicos</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Lat mín</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Lat máx</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Lon mín</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Lon máx</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Acropora cervicornis</td>
+<td style="text-align: right;">35</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">10.48</td>
+<td style="text-align: right;">25.16</td>
+<td style="text-align: right;">-87.46</td>
+<td style="text-align: right;">-67.81</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Acropora palmata</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">8.07</td>
+<td style="text-align: right;">25.16</td>
+<td style="text-align: right;">-87.31</td>
+<td style="text-align: right;">-66.05</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Porites astreoides</td>
+<td style="text-align: right;">165</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">-23.12</td>
+<td style="text-align: right;">25.16</td>
+<td style="text-align: right;">-87.83</td>
+<td style="text-align: right;">-34.78</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="introducción" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="introducción"><span class="header-section-number">0.2</span> Introducción</h2>
+<p>La biodiversidad marina enfrenta amenazas sin precedentes debido al cambio climático, la acidificación oceánica, y las actividades antropogénicas. Este análisis utiliza un pipeline integrado que combina múltiples fuentes de datos y métodos analíticos avanzados para evaluar el estado de conservación y los patrones evolutivos de especies marinas clave.</p>
+<p>La robustez metodológica es tan importante como los resultados mismos, especialmente en campos como la biología de la conservación y la evolución, donde las decisiones pueden tener implicaciones a largo plazo y deben basarse en evidencia auditable y reproducible.</p>
+<p>This thesis is about getting computer programs from one machine to another—and having them still work when they get there. This is the problem of software deployment. Though it is a part of the field of Software Configuration Management (SCM), it has not been a subject of academic study until quite recently [169]. The development of principles and tools to support the deployment process has largely been relegated to industry, system administrators, and Unix hackers. This has resulted in a large number of often ad hoc tools that typically automate manual practices but do not address fundamental issues in a systematic and disciplined way. This is evidenced by the huge number of mailing list and forum postings about deployment failures, ranging from applications not working due to missing dependencies, to subtle malfunctions caused by incompatible components. Deployment problems also seem curiously resistant to automation: the same concrete problems appear time and again. Deployment is especially difficult in heavily component-based systems—such as Unix-based open source software—because the effort of dealing with the dependencies can increase super-linearly with each additional dependency. This thesis describes a system for software deployment called Nix that addresses many of the problems that plague existing deployment systems. In this introductory chapter I describe the problem of software deployment, give an overview of existing systems and the limitations that motivate</p>
+<p>Software deployment is the problem of managing the distribution of software to end-user machines. That is, a developer has created some piece of software, and this ultimately has to end up on the machines of end-users. After the initial installation of the software, it might need to be upgraded or uninstalled. Presumably, the developer has tested the software and found it to work sufficiently well, so the challenge is to make sure that the software works just as well, i.e., the same, on the end-user machines. I will informally refer to this as correct deployment: given identical inputs, the software should behave the same on an end-user machine as on the developer machine1. This should be a simple problem. For instance, if the software consists of a set of files, then deployment should be a simple matter of copying those to the target machines. In</p>
+<p>practice, deployment turns out to be much harder. This has a number of causes. These fall into two broad categories: environment issues and manageability issues. Environment issues The first category is essentially about correctness. The software might make all sorts of demands about the environment in which it executes: that certain other software components are present in the system, that certain configuration files exist, that certain modifications were made to the Windows registry, and so on. If any of those environmental characteristics does not hold, then there is a possibility that the software does not work the same as it did on the developer machine. Some concrete issues are the following: • A software component is almost never self-contained; rather, it depends on other components to do some work on its behalf. These are its dependencies. For correct deployment, it is necessary that all dependencies are identified. This identification is quite hard, however, as it is often difficult to test whether the dependency specification is complete. After all, if we forget to specify a dependency, we don’t discover that fact if the machine on which we are testing already happens to have the dependency installed. • Dependencies are not just a runtime issue. To build a component in the first place we need certain dependencies (such as compilers), and these need not be the same as the runtime dependencies, although there may be some overlap. In general, deployment of the build-time dependencies is not an end-user issue, but it might be in sourcebased deployment scenarios; that is, when a component is deployed in source form. This is common in the open source world. • Dependencies also need to be compatible with what is expected by the referring component. In general, not all versions of a component will work. This is the case even in the presence of type-checked interfaces, since interfaces never give a full specification of the observable behaviour of a component. Also, components often exhibit build-time variability, meaning that they can be built with or without certain optional features, or with other parameters selected at build time. Even worse, the component might be dependent on a specific compiler, or on specific compilation options being used for its dependencies (e.g., for Application Binary Interface (ABI) compatibility). • Even if all required dependencies are present, our component still has to find them, in order to actually establish a concrete composition of components. This is often a rather labour-intensive part of the deployment process. Examples include setting up the dynamic linker search path on Unix systems [160], or the CLASSPATH in the Java environment. • Components can depend on non-software artifacts, such as configuration files, user accounts, and so on. For instance, a component might keep state in a database that has to be initialised prior to its first use. 4 1.1. Software deployment • Components can require certain hardware characteristics, such as a specific processor type or a video card. These are somewhat outside the scope of software deployment, since we can at most check for such properties, not realise them if they are missing. • Finally, deployment can be a distributed problem. A component can depend on other components running on remote machines or as separate processes on the same machine. For instance, a typical multi-tier web service consists of an HTTP server, a server implementing the business logic, and a database server, possibly all running on different machines. So we have two problems in deployment: we must identify what our component’s requirements on the environment are, and we must somehow realise those requirements in the target environment. Realisation might consist of installing dependencies, creating or modifying configuration files, starting remote processes, and so on. Manageability issues The second category is about our ability to properly manage the deployment process. There are all kinds of operations that we need to be able to perform, such as packaging, transferring, installing, upgrading, uninstalling, and answering various queries; i.e., we have to be able to support the evolution of a software system. All these operations require various bits of information, can be time-consuming, and if not done properly can lead to incorrect deployment. For example: • When we uninstall a component, we have to know what steps to take to safely undo the installation, e.g., by deleting files and modifying configuration files. At the same time we must also take care never to remove any component still in use by some other part of the system. • Likewise, when we perform a component upgrade, we should be careful not to overwrite any part of any component that might induce a failure in another part of the system. This is the well-known DLL hell, where upgrading or installing one application can cause a failure in another application due to shared dynamic libraries. It has been observed that software systems often suffer from the seemingly inexplicable phenomenon of “bit rot,” i.e., that applications that worked initially stop working over time due to changes in the environment [26]. • Administrators often want to perform queries such as “to what component does this file belong?”, “how much disk space will it take to install this component?”, “from what sources was this component built?”, and so on. • Maintenance of a system means keeping the software up to date. There are many different policy choices that can be made. For instance, in a network, system administrators may want to push updates (such as security fixes) to all client machines periodically. On the other hand, if users are allowed to administer their own machines, it should be possible for them to select components individually. • When we upgrade components, it is important to be able to undo, or roll back the effects of the upgrade, if the upgrade turns out to break important functionality. This 5 1. Introduction requires both that we remember what the old configuration was, and that we have some way to reproduce the old configuration. • In heterogeneous networks (i.e., consisting of many different types of machines), or in small environments (e.g., a home computer), it is not easy to stay up to date with software updates. In particular in the case of security fixes this is an important problem. So we need to know what software is in use, whether updates are available, and whether such updates should be performed. • Components can often be deployed in both source and binary form. Binary packages have to be built for each supported platform, and sometimes in several variants as well. For instance, the Linux kernel has thousands of build-time configuration options. This greatly increases the deployment effort, particularly if packaging and transfer of packages is a manual or semi-automatic process. • Since components often have a huge amount of variability, we sometimes want to expose that variability to certain users. For instance, Linux distributors or system administrators typically want to make specific feature selections. A deployment system should support this. 1.2. The state of the art Having seen some of the main issues in the field of software deployment, we now look at some representative deployment tools. This section does not aim to provide a full survey of the field; rather, the goal is to show the main approaches to deployment. Section 7.6 has a more complete discussion of related work. Package management is a perennial problem in the Unix community [2]. In fact, entire operating system distributions rise and fall on the basis of their deployment qualities. It can be argued that Gentoo Linux’s [77] quick adoption in the Linux community was entirely due to the perceived strengths of its package management system over those used by other distributions. This interest in deployment can be traced to Unix’s early adoption in large, advanced and often academic installations (in contrast to the single PC, single user focus in the PC industry in a bygone era). Also, for better or for worse, Unix systems have traditionally insisted on storing components in global namespaces in the file system such as the /usr/bin directory. This makes management tools indispensable. But more importantly, modern Unix components have fine-grained reuse, often having dozens of dependencies on other components. Since it is not desirable to use monolithic distribution (as is generally done in Windows and Mac OS X, as discussed below), a package management tool is absolutely required to support the resulting deployment complexity. Therefore Unix (and specifically, Linux) package management is what we will look at first. RPM The most widely used Linux package management system is the Red Hat Package Manager (RPM) [62], and as it is a good, mature tool it is instructive to look at it in some detail. RPM is a low-level deployment tool: it installs and manages components, keeping meta-information about them to prevent unsafe upgrades or uninstalls.</p>
+<section id="el-paradigma-de-la-investigación-reproducible" class="level3" data-number="0.2.1">
+<h3 data-number="0.2.1" class="anchored" data-anchor-id="el-paradigma-de-la-investigación-reproducible"><span class="header-section-number">0.2.1</span> 1. El Paradigma de la Investigación Reproducible</h3>
+<p>Estos artículos establecen el marco conceptual y la necesidad urgente de la reproducibilidad computacional en las ciencias, particularmente en ecología y evolución.</p>
+<ul>
+<li><p><strong>Referencia Clave:</strong> &gt; Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., &amp; Teal, T. K. (2017). Good enough practices in scientific computing. <em>PLOS Computational Biology</em>, 13(6), e1005510.</p>
+<p><strong>Relevancia para su reporte:</strong> Este es un artículo fundamental y muy accesible. Justifica la necesidad de prácticas como la automatización de flujos de trabajo (lo que usted hace con <code>Make</code> y <code>{targets}</code>) y el seguimiento de versiones del software (lo que logra con <code>Nix</code>). Puede citarlo para argumentar que su metodología no es una complejidad innecesaria, sino una adhesión a las “buenas prácticas” recomendadas por la comunidad científica para evitar errores y asegurar la longevidad de los resultados.</p></li>
+<li><p><strong>Referencia Específica al Campo:</strong> &gt; Marwick, B., Boettiger, C., &amp; Mullen, L. (2018). Packaging data analytical work reproducibly with R. <em>The American Statistician</em>, 72(1), 80-88.</p>
+<p><strong>Relevancia para su reporte:</strong> Este artículo aborda directamente el ecosistema de R. Explica cómo empaquetar un proyecto de análisis de datos (código, datos y el ambiente computacional) para hacerlo reproducible. Proporciona el argumento académico perfecto para justificar por qué usar una herramienta como <code>Nix</code> (a través de <code>rix</code>) es una solución superior a simplemente listar los paquetes, ya que captura el estado completo del sistema.</p></li>
+</ul>
+</section>
+<section id="gestión-del-ambiente-computacional-con-nix" class="level3" data-number="0.2.2">
+<h3 data-number="0.2.2" class="anchored" data-anchor-id="gestión-del-ambiente-computacional-con-nix"><span class="header-section-number">0.2.2</span> 2. Gestión del Ambiente Computacional con Nix</h3>
+<p>Estas referencias validan el uso de gestores de ambientes declarativos como Nix para garantizar la reproducibilidad a nivel de software.</p>
+<ul>
+<li><p><strong>Referencia Técnica y Conceptual:</strong> &gt; Dolstra, E. (2006). <em>The purely functional software deployment model</em>. (Tesis Doctoral, Utrecht University).</p>
+<p><strong>Relevancia para su reporte:</strong> Esta es la fuente original que describe el modelo detrás de Nix. Es una referencia más técnica, pero citarla demuestra un profundo entendimiento de los fundamentos de su flujo de trabajo. Puede usarla para afirmar que su proyecto se basa en un “modelo puramente funcional” que garantiza la construcción de ambientes computacionales determinísticos, eliminando problemas comunes como el “funciona en mi máquina”.</p></li>
+<li><p><strong>Referencia Práctica en Ciencia:</strong> &gt; Gronenschild, E. H., &amp; K. P. Körding. (2021). A faster, more reproducible, and more integrative future for neuroscience. <em>Neuron</em>, 109(20), 3185-3187.</p>
+<p><strong>Relevancia para su reporte:</strong> Aunque el campo es la neurociencia, el argumento es universal y aplicable a la biología marina. Los autores abogan por herramientas como Nix para resolver la “crisis de reproducibilidad” en campos computacionalmente intensivos. Citar este artículo le permite establecer un paralelismo, argumentando que, al igual que en la neurociencia, la complejidad del análisis de datos genómicos, espaciales y taxonómicos en la conservación marina exige soluciones de reproducibilidad robustas.</p></li>
+</ul>
+</section>
+<section id="automatización-de-pipelines-con-targets" class="level3" data-number="0.2.3">
+<h3 data-number="0.2.3" class="anchored" data-anchor-id="automatización-de-pipelines-con-targets"><span class="header-section-number">0.2.3</span> 3. Automatización de Pipelines con <code>{targets}</code></h3>
+<p>La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. <code>{targets}</code> es el estándar moderno en el ecosistema R.</p>
+<ul>
+<li><p><strong>Referencia del Software:</strong> &gt; Landau, W. M. (2021). The targets R package: a dynamic Make-like function-oriented pipeline toolkit for reproducibility and high-performance computing. <em>Journal of Open Source Software</em>, 6(57), 2959.</p>
+<p><strong>Relevancia para su reporte:</strong> Esta es la cita oficial y directa del paquete <code>{targets}</code>. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.</p></li>
+</ul>
+</section>
+<section id="orquestación-del-flujo-de-trabajo-con-make" class="level3" data-number="0.2.4">
+<h3 data-number="0.2.4" class="anchored" data-anchor-id="orquestación-del-flujo-de-trabajo-con-make"><span class="header-section-number">0.2.4</span> 4. Orquestación del Flujo de Trabajo con <code>Make</code></h3>
+<p>El uso de <code>Make</code> como un “orquestador” de alto nivel simplifica la interacción y estandariza los procedimientos.</p>
+<ul>
+<li><p><strong>Referencia Clásica sobre la Práctica:</strong> &gt; Noble, W. S. (2009). A quick guide to organizing computational biology projects. <em>PLOS Computational Biology</em>, 5(7), e1000424.</p>
+<p><strong>Relevancia para su reporte:</strong> Este influyente artículo describe las mejores prácticas para organizar proyectos de biología computacional. Recomienda explícitamente el uso de <code>Make</code> para automatizar la pipeline, desde la descarga de datos hasta la generación de figuras finales. Citarlo posiciona su uso de <code>Makefile</code> como una práctica establecida y recomendada para mantener la organización, la claridad y la automatización en proyectos complejos, lo cual es vital en estudios integrativos de biodiversidad marina.</p></li>
+</ul>
+</section>
+<section id="cómo-integrar-estas-referencias-en-su-reporte" class="level3" data-number="0.2.5">
+<h3 data-number="0.2.5" class="anchored" data-anchor-id="cómo-integrar-estas-referencias-en-su-reporte"><span class="header-section-number">0.2.5</span> Cómo Integrar Estas Referencias en su Reporte</h3>
+<p>Puede estructurar una sección de “Metodología Computacional” o “Flujo de Trabajo Reproducible” en su reporte. Comience estableciendo la importancia de la reproducibilidad en la ciencia de la conservación, citando a <strong>Wilson et al.&nbsp;(2017)</strong>. Luego, describa su flujo de trabajo como una implementación de estos principios, detallando cada componente:</p>
+<ol type="1">
+<li><strong>Orquestación:</strong> Explique que utiliza <code>Make</code> como punto de entrada estandarizado, siguiendo las recomendaciones de <strong>Noble (2009)</strong>.</li>
+<li><strong>Gestión del Ambiente:</strong> Describa cómo <code>rix</code> y <code>Nix</code> garantizan un ambiente idéntico, abordando los problemas discutidos por <strong>Marwick et al.&nbsp;(2018)</strong> y basándose en los principios de <strong>Dolstra (2006)</strong>.</li>
+<li><strong>Pipeline de Análisis:</strong> Introduzca <code>{targets}</code> como su motor de pipeline, citando a <strong>Landau (2021)</strong>, y explique cómo asegura que sus resultados estén siempre sincronizados con sus datos y código.</li>
+</ol>
+<p>Al hacer esto, no solo presenta sus resultados, sino que también demuestra que han sido generados mediante un proceso metodológicamente sólido, transparente y verificable, aumentando significativamente el impacto y la credibilidad de su investigación.</p>
+</section>
+<section id="objetivos" class="level3" data-number="0.2.6">
+<h3 data-number="0.2.6" class="anchored" data-anchor-id="objetivos"><span class="header-section-number">0.2.6</span> Objetivos</h3>
+<ol type="1">
+<li><strong>Integrar datos de ocurrencia</strong> de múltiples fuentes (OBIS, GBIF)</li>
+<li><strong>Validar y limpiar</strong> coordenadas geográficas usando métodos estandarizados</li>
+<li><strong>Analizar patrones espaciales</strong> de distribución de especies marinas</li>
+<li><strong>Modelar idoneidad de hábitat</strong> considerando variables ambientales</li>
+<li><strong>Generar recomendaciones</strong> para conservación basadas en evidencia</li>
+</ol>
+</section>
+</section>
+<section id="metodología" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="metodología"><span class="header-section-number">0.3</span> Metodología</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Nota
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>‘direnv: error /home/santi/Projects/NereidaPipeline/.envrc is blocked. Run <code>direnv allow</code> to approve its content’</p>
+</div>
+</div>
+<p>Usted ha combinado tres herramientas clave de manera muy efectiva: Make como orquestador, Nix (a través de rix) como gestor del ambiente computacional y {targets} para la gestión de la pipeline de análisis.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Makefile">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Makefile
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Makefile funciona como un “protocolo de laboratorio” ejecutable. Su propósito principal es automatizar y estandarizar las tareas repetitivas, encapsulando comandos complejos en alias simples y declarativos.</p>
+<p>Makefile no es solo un archivo, sino la interfaz de control principal. En lugar de recordar una serie de scripts y sus argumentos, usted y sus colaboradores solo necesitan interactuar con comandos semánticos como make test o make regenerate.</p>
+<p>Así es como su Makefile dirige el flujo:</p>
+<pre><code>make regenerate: Este es el comando fundamental para la reproducibilidad. No ejecuta rix directamente, sino que delega la tarea al script ./regenerate.sh. Este script, a su vez, invoca su archivo build_env.R, donde la función rix::rix() traduce su lista de paquetes de R y dependencias del sistema en un archivo default.nix. Este es el plano exacto de su ambiente.
+
+make test: Este comando invoca ./test_environment.sh, un paso de validación crucial. El script verifica que el ambiente de Nix, una vez construido, contenga todos los paquetes que su pipeline de {targets} declara necesitar en _targets.R. Esto cierra el círculo, asegurando que el ambiente definido coincide con el ambiente requerido.
+
+make update: Actúa como un meta-comando que ejecuta una secuencia lógica de tareas a través del script update_workflow.sh, probablemente combinando la regeneración y la prueba del ambiente.
+
+make clean: Mantiene la higiene del proyecto, eliminando artefactos y resultados intermedios para garantizar que la próxima ejecución comience desde un estado conocido y limpio.</code></pre>
+</div>
+</div>
+<p>✅ Reproducibilidad (Fortaleza Mayor)</p>
+<p>Este es el punto más fuerte de su sistema. Al definir el entorno computacional de forma declarativa con rix en build_env.R y materializarlo con Nix, ha eliminado prácticamente la variabilidad del entorno. Cualquier investigador, en cualquier máquina con Nix, puede ejecutar make regenerate y nix-shell para recrear un ambiente de software bit a bit idéntico. Esto es el estándar de oro para la reproducibilidad computacional.</p>
+<p>✅ Facilidad de Uso y Mantenimiento (Fortaleza)</p>
+<p>El Makefile es la clave aquí. Proporciona una “API” de línea de comandos simple y legible para su proyecto. Un nuevo colaborador no necesita entender los detalles de Nix o los scripts de shell; solo necesita leer la salida de make help para empezar a trabajar. Esto reduce drásticamente la curva de aprendizaje y los posibles errores.</p>
+<p>📈 Escalabilidad (Fortaleza con un área de mejora)</p>
+<pre><code>Fortaleza: El uso de {targets} es ideal para la escalabilidad del análisis. Su naturaleza basada en dependencias garantiza que solo se recalculen los pasos necesarios, ahorrando un tiempo de cómputo inmenso a medida que el análisis crece en complejidad.
+
+Área de Mejora: La principal fricción a futuro es el acoplamiento manual entre _targets.R y build_env.R. Actualmente, si usted añade library(nuevo_paquete) en su pipeline _targets.R, debe recordar manualmente añadir "nuevo_paquete" al vector targets_packages en build_env.R. A medida que el proyecto crezca y colaboren más personas, es casi seguro que este paso se olvidará, lo que provocará fallos en las pruebas (make test) y frustración.</code></pre>
+<p>Recomendación para Optimizar la Escalabilidad</p>
+<p>Para que este flujo de trabajo sea verdaderamente a prueba de futuro, el siguiente paso lógico es automatizar la sincronización de paquetes.</p>
+<p>Se podría modificar el script regenerate.sh (o crear uno nuevo) para que, antes de ejecutar build_env.R, primero analice el archivo _targets.R en busca de todas las llamadas library(…). Luego, puede pasar esa lista de paquetes como un argumento a su script de R o escribirla en un archivo temporal que build_env.R pueda leer.</p>
+<p>Esto desacoplaría completamente la definición del ambiente de la pipeline, adhiriéndose al principio de “Fuente Única de Verdad” (Single Source of Truth). Su pipeline en _targets.R se convierte en la única fuente que define qué paquetes se necesitan, y el resto del sistema reacciona automáticamente.</p>
+<p>En conclusión, su arquitectura actual es excelente, avanzada y se adelanta a la mayoría de los flujos de trabajo académicos. Es altamente reproducible y fácil de usar. Al implementar la sincronización automática de paquetes, lo convertirá en un sistema prácticamente infalible y listo para escalar a cualquier complejidad.</p>
+<section id="crear-el-ambiente-con-nix" class="level3" data-number="0.3.1">
+<h3 data-number="0.3.1" class="anchored" data-anchor-id="crear-el-ambiente-con-nix"><span class="header-section-number">0.3.1</span> Crear el ambiente con Nix</h3>
+<p>La implementación de avanzadas herramientas bioinformáticas y la gestión eficiente de pipelines han revolucionado el estudio de la biodiversidad y la evolución de la biota marina. En este marco, el proyecto propone una aplicación de R que hace uso de Nix por medio del paquete R {rix}, convergiendo en una solución óptima para el manejo de diversas funciones, incluyendo el procesamiento de datos, la gestión de código y la integración de información en repositorios.</p>
+<p>Nix es un sistema de paquetes de código abierto que adopta una nueva manera de manejar las dependencias, proporcionando un entorno de trabajo coherentemente reproducible. Asegura que los paquetes se construyen e instalan de manera aislada, lo que permite un control de versiones y una gestión de las dependencias finamente afinada (Dolstra, E., 2006). Así, Nix se impone como una herramienta fundamental cambio de contextos académicos y empresariales, permitiendo la creación de entornos de trabajo estables y reproducibles.</p>
+<p>El paquete R {rix}, en línea con este enfoque, permite una integración simplificada de Nix en la plataforma R. Esto significa que las dependencias de R, del sistema y el control de versiones pueden ser gestionados de forma centralizada a través de Nix. La inclusión de {rix} en este proyecto permite el manejo eficiente de las dependencias de R de manera reproducible (Gabay et al., 2019).</p>
+<p>En conclusión, la fundamentación del proyecto en la integración de R, Nix y el paquete {rix} se traduce en una robustez y una gestión optimizada de las dependencias, facilitando notablemente el procesamiento y el análisis de datos y el manejo de código. Además, permite la integración eficiente de información en repositorios y proporciona un entorno de trabajo reproducible, lo cual es vital para mantener la validez y la replicabilidad de las investigaciones científicas.</p>
+<section id="scripts-de-ayuda" class="level4" data-number="0.3.1.1">
+<h4 data-number="0.3.1.1" class="anchored" data-anchor-id="scripts-de-ayuda"><span class="header-section-number">0.3.1.1</span> Scripts de Ayuda</h4>
+<p>El archivo ‘regenerate.sh’ ejecuta ‘build_env.R’ utilizando ‘rix’ de ‘nixpkgs’.</p>
+<p>El ambiente (software, dependencias del sistema, librerías, etc.)pipeline se controla con el archivo ‘build_env.R’, el cuál se sincroniza con ’_targets.R’, el cuál controla pipeline, tomando las funciones guardadas en ’./R/*.r’ y el reporte técnico en ‘./reportes/’</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="Flujo de Trabajo Recomendado">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Flujo de Trabajo Recomendado
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong><em>Si se modifica la pipeline</em></strong></p>
+<p>Al modificar el archivo ‘./build_env.R’(p.&nbsp;ej. agregar librerías nuevas), ejecutar este comando:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nix-shell</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./update_workflow.sh</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Al ejecutar este script:</p>
+<ul>
+<li>Regeneramos y construimos el ambiente de Nix</li>
+<li>Ejecutamos el script ‘../test_environment.sh’ para comprobar y verificar la disponibilidad de librerías utilizadas en la pipeline</li>
+<li>Ejecutamos la pipeline (<em>opcional</em>)</li>
+</ul>
+<p><strong><em>Si no se agregan nuevos paquetes a la pipeline</em></strong></p>
+<p>Ejecutar:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nix-shell</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># dentro de R:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">targets::tar_make()</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</section>
+<section id="manejo-de-ambientes-nix-vs-otras-opciones" class="level4" data-number="0.3.1.2">
+<h4 data-number="0.3.1.2" class="anchored" data-anchor-id="manejo-de-ambientes-nix-vs-otras-opciones"><span class="header-section-number">0.3.1.2</span> Manejo de ambientes: Nix vs otras opciones</h4>
+<p>Utilizar ‘Nix’ mediante el paquete ‘rix’ es una opción más robusta para gestionar entornos científicos y pipelines frente a herramientas como ‘conda’ o ‘renv’. Se incluye una tabla comparativa seguida de una breve recomendación de uso.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 26%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Criterio / Aspecto</th>
+<th style="text-align: right;">Nix (con rix)</th>
+<th style="text-align: right;">Conda</th>
+<th style="text-align: right;">renv</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Reproducibilidad determinista</td>
+<td style="text-align: right;">Muy alta. Nix es declarativo e inmune a cambios del sistema; rix genera expresiones reproducibles para R y deps del sistema.</td>
+<td style="text-align: right;">Moderada. Conda puede registrar versiones, pero la resolución de dependencias y canales introduce variabilidad.</td>
+<td style="text-align: right;">Parcial. Fija versiones de paquetes R (lockfile) pero no gestiona dependencias del sistema nativas.</td>
+</tr>
+<tr class="even">
+<td>Gestión de dependencias del sistema (C, libs, binarios)</td>
+<td style="text-align: right;">Nativa y exhaustiva. Nix declara y proporciona librerías del sistema de forma aislada.</td>
+<td style="text-align: right;">Buena (conda-forge), pero limitada para ciertos paquetes del sistema y con problemas de enlaces dinámicos.</td>
+<td style="text-align: right;">Ninguna. Depende del SO o de gestores externos; riesgo de “works on my machine”.</td>
+</tr>
+<tr class="odd">
+<td>Aislamiento / hermeticidad</td>
+<td style="text-align: right;">Alto: entornos aislados en la store de Nix; evita contaminación por el entorno del usuario.</td>
+<td style="text-align: right;">Aislado a nivel de entorno, pero puede verse afectado por bibliotecas del sistema; problemas con PATH/LD_LIBRARY_PATH.</td>
+<td style="text-align: right;">No a nivel de sistema; sólo controla paquetes R dentro del proyecto.</td>
+</tr>
+<tr class="even">
+<td>Declaratividad y trazabilidad</td>
+<td style="text-align: right;">Declarativo (nix expressions). Fácil de versionar, auditar y reconstruir.</td>
+<td style="text-align: right;">Declarativo limitado (environment.yml), pero resolución no determinista entre ejecuciones.</td>
+<td style="text-align: right;">Declarativo para R (renv.lock) pero sin trazabilidad de libs externas.</td>
+</tr>
+<tr class="odd">
+<td>Integración con CI / archivado a largo plazo</td>
+<td style="text-align: right;">Excelente: reconstrucción reproducible en CI; uso de cachés binarios; apto para archivado y publicación de entornos.</td>
+<td style="text-align: right;">Buena en CI, pero reproducibilidad exacta depende de canales y binarios disponibles.</td>
+<td style="text-align: right;">Adecuado para reproducir entornos R en el corto/medio plazo; falla si faltan deps del sistema.</td>
+</tr>
+<tr class="even">
+<td>Compatibilidad multi-lenguaje</td>
+<td style="text-align: right;">Sí, gestiona todo el stack (R, Python, C, system tools) en un único lenguaje de especificación.</td>
+<td style="text-align: right;">Buena (R, Python, otros), pero fragmentación en canales.</td>
+<td style="text-align: right;">Enfocado a R; no gestiona otros lenguajes de forma integrada.</td>
+</tr>
+<tr class="odd">
+<td>Facilidad de uso / curva de aprendizaje</td>
+<td style="text-align: right;">Moderada a alta. rix reduce la barrera para usuarios de R pero Nix tiene conceptos nuevos.</td>
+<td style="text-align: right;">Baja (fácil de empezar). Muy accesible para usuarios nuevos.</td>
+<td style="text-align: right;">Muy baja — transparente para usuarios R; fácil de incorporar.</td>
+</tr>
+<tr class="even">
+<td>Tamaño / consumo de disco</td>
+<td style="text-align: right;">Amplio (store de Nix), pero con beneficios de caché y deduplicación entre proyectos.</td>
+<td style="text-align: right;">Variable; entornos duplicados pueden consumir mucho.</td>
+<td style="text-align: right;">Ligero (solo paquetes R), pero requiere deps del sistema por separado.</td>
+</tr>
+<tr class="odd">
+<td>Limitaciones notables</td>
+<td style="text-align: right;">Curva de aprendizaje; en Windows requiere WSL o soluciones; rix aún evoluciona.</td>
+<td style="text-align: right;">Canales y resolución crean incoherencias; algunos paquetes de sistema difíciles.</td>
+<td style="text-align: right;">No asegura reproducibilidad completa (falta libs del SO); no declara sistema.</td>
+</tr>
+<tr class="even">
+<td>Uso recomendado</td>
+<td style="text-align: right;">Pipelines reproducibles, CI/archivado, proyectos con dependencias R + sistema, entornos multi-lenguaje y producción.</td>
+<td style="text-align: right;">Entornos ad-hoc, exploración rápida, usuarios que necesitan rápidos “envs” multiplataforma.</td>
+<td style="text-align: right;">Desarrollo R colaborativo rápido, lockfiles para paquetes R, proyectos que delegan deps del SO a otra solución.</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Nota
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Razones clave para preferir Nix + rix en proyectos científicos y pipelines</p>
+<ul>
+<li>Reproducibilidad completa: Nix describe exactamente qué se construye y cuáles binarios y bibliotecas del sistema se usan; rix adapta este enfoque al ecosistema R, permitiendo reconstrucciones idénticas en diferentes máquinas y CI.</li>
+<li>Gestión unificada de R y dependencias del sistema: muchas herramientas R necesitan bibliotecas C/Fortran. Nix las gestiona junto con los paquetes R, evitando fallos invisibles por falta de libs nativas.</li>
+<li>Declaratividad, versionado y trazabilidad: los archivos Nix (o los artefactos que genera rix) son documentos versionables que sirven como metadatos exactos del entorno utilizado para un análisis — esencial para reproducibilidad y revisión académica.</li>
+<li>Aislamiento hermético: elimina efectos de entornos previos o variaciones en el usuario, reduciendo errores “works on machine X”.</li>
+<li>Integración con CI y archivado a largo plazo: cachés binarios y la capacidad de reconstruir entornos permiten validar pipelines en CI y archivar entornos reproducibles junto a publicaciones.</li>
+<li>Interoperabilidad: aunque renv y conda pueden usarse junto a Nix, emplear Nix como capa superior unifica la gestión y reduce la complejidad operativa.</li>
+</ul>
+<p>Limitaciones y balance práctico</p>
+<ul>
+<li>Curva de aprendizaje: Nix requiere tiempo para dominar sus conceptos. rix reduce fricción para usuarios R, pero la adopción institucional puede exigir formación.</li>
+<li>Uso de disco y recursos: la store de Nix puede ocupar más espacio, aunque la deduplicación y caché binario compensa en entornos compartidos.</li>
+<li>Windows: Nix funciona mejor en Linux/macOS; en Windows suele requerir WSL o contenedores (esto está mejorando con la comunidad).</li>
+</ul>
+<p>Recomendaciones prácticas</p>
+<ul>
+<li>Para investigación reproducible, producción de pipelines y CI: adoptar Nix + rix como estándar de entorno. Mantener la expresión Nix en el repositorio junto con el código y los datos procesables.</li>
+<li>Para desarrollo rápido o enseñanza: combinar renv (para control fino de paquetes R durante el desarrollo) dentro de un entorno Nix que garantice las dependencias del sistema. renv puede convivir con Nix: renv controla versiones R; Nix asegura libs nativas.</li>
+<li>Para entornos multi-lenguaje con uso intensivo de paquetes binarios (Python + R + herramientas C): Nix ofrece la solución más coherente y reproducible frente a la mezcla de conda + gestores del sistema.</li>
+</ul>
+</div>
+</div>
+<p>Nix, utilizado a través de rix, ofrece la solución más sólida y trazable para garantizar entornos reproducibles y pipelines científicos que integran R con dependencias del sistema. Aunque la adopción exige inversión en aprendizaje, los beneficios en reproducibilidad, integridad y archivado hacen de Nix la opción preferente para proyectos científicos serios y para la producción de análisis reproducibles.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Uso de ‘conda’ + ‘Nix’ (‘{rix}’)</strong></p>
+<ul>
+<li>Es posible usar conda dentro de un entorno generado con ‘rix/Nix’: ‘Nix’ puede instalar paquetes del ecosistema ‘conda’ (p.&nbsp;ej. ‘miniconda3’) y ejecutar comandos conda desde el ‘shell’ que ‘Nix’ provee. ‘rix’, al final, genera expresiones ‘Nix’; en esas expresiones se pueden declarar paquetes del sistema como “‘miniconda3’” o “‘mamba’” y añadir un ‘shell_hook’ para crear/activar un entorno conda/‘conda-env’ al entrar al ‘nix-shell’.<br>
+</li>
+<li>Sin embargo, en términos de reproducibilidad y coherencia, incluir ‘conda’ dentro de ‘Nix’ es en gran medida <strong>redundante</strong> y atenta contra las garantías que ‘Nix’ aporta: ‘conda’ genera entornos que no son <span class="math inline">\(100\%\)</span> declarativos ni bit-reproducibles (resolución de dependencias y artefactos binarios dependen de servidores externos). Por ello, el patrón recomendado es gestionar ‘Python’ y sus binarios desde ‘Nix’ (‘nixpkgs’) siempre que sea posible; solo recurrir a conda cuando exista una dependencia binaria crítica que no esté disponible en ‘nixpkgs’ o cuando el equipo ya dependa fuertemente de ‘conda’ y se acepte la pérdida parcial de determinismo.</li>
+</ul>
+<p><strong>Gestión de dependencias del sistema</strong></p>
+<ul>
+<li>‘rix/Nix’ gestiona paquetes de sistema (‘git’, ‘libssl’, binarios ‘C/Fortran’) de forma nativa y declarativa. ‘Conda’ (especialmente ‘conda-forge’) puede proveer muchos paquetes binarios (‘python’, librerías científicas), pero no sustituye a un gestor de sistema para librerías del sistema (p.&nbsp;ej. ‘glibc’, versiones del compilador) y su resolución depende de canales; por tanto, no iguala la hermeticidad ni la trazabilidad de ‘Nix’.</li>
+</ul>
+<p><strong>Recomendaciones prácticas y consideraciones</strong></p>
+<ul>
+<li>Preferible: declarar ‘Python’ y paquetes ‘Python’ directamente en ‘Nix’ (usar paquetes ‘python’ de ‘nixpkgs’ o ‘poetry2nix/pypi2nix’), o usar ‘mamba/conda’ dentro de ‘Nix’ solo para casos puntuales.</li>
+<li>Ventaja: entornos completamente reconstruibles en ‘CI’ y archivables con la expresión ‘Nix’.</li>
+<li>Si se incorpora ‘conda’ dentro de ‘Nix’: incluir ‘miniconda/mamba’ como ‘system_pkgs’ en ‘rix()’ y ‘use shell_hook’ para crear/activar un entorno ‘conda’ desde un ‘environment.yml’ almacenado en el repositorio. Documentar explícitamente este paso y aceptar las limitaciones de determinismo.</li>
+<li>‘Conda’ puede instalar muchos paquetes “del sistema” (a través de ‘conda-forge’), pero no gestiona el sistema base ni garantiza identicidad binaria entre máquinas; ‘Nix’ sí lo hace.</li>
+</ul>
+<p>Ejemplo práctico</p>
+<p>— modificación sugerida de’ build_env.R’ (opcional: integrar ‘conda/miniconda’ y crear env al entrar al ‘nix-shell’):</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ...existing code...</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rix</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">r_ver =</span> <span class="st">"latest-upstream"</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">r_pkgs =</span> all_packages,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="sc">-</span>  <span class="at">system_pkgs =</span> <span class="fu">c</span>(<span class="st">"git"</span>, <span class="st">"python3"</span>, <span class="st">"quarto"</span>),</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="co"># Incluir miniconda3 si se necesita usar conda dentro del entorno Nix.</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="co"># Alternativa recomendada: gestionar Python desde nixpkgs (evita redundancia).</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="at">system_pkgs =</span> <span class="fu">c</span>(<span class="st">"git"</span>, <span class="st">"python3"</span>, <span class="st">"quarto"</span>, <span class="st">"miniconda3"</span>),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="sc">-</span>  <span class="at">tex_pkgs =</span> <span class="fu">c</span>(<span class="st">"amsmath"</span>),</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="sc">-</span>  <span class="at">ide =</span> <span class="st">"none"</span>,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="sc">-</span>  <span class="at">shell_hook =</span> <span class="st">""</span>,</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="at">tex_pkgs =</span> <span class="fu">c</span>(<span class="st">"amsmath"</span>),</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="at">ide =</span> <span class="st">"none"</span>,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="co"># Ejemplo de shell_hook que crea/actualiza un entorno conda local a partir de environment.yml.</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="co"># Nota: esto ejecuta conda al entrar al nix-shell; la reproducibilidad del entorno conda</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="co"># depende de conda/mamba y de los canales usados.</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="sc">+</span>  <span class="at">shell_hook =</span> <span class="st">'</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="st">+if [ -f environment.yml ]; then</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="st">+  if [ ! -d ".conda-env" ]; then</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="st">+    echo "Creando entorno conda local (.conda-env) desde environment.yml..."</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="st">+    conda env create -p ./.conda-env -f environment.yml || conda env update -p ./.conda-env -f environment.yml</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="st">+  fi</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="st">+  export PATH="$(pwd)/.conda-env/bin:$PATH"</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="st">+fi</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="st">+'</span>,</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">project_path =</span> <span class="st">"."</span>,</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">overwrite =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">print =</span> <span class="cn">TRUE</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="co"># ...existing code...</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Caveats técnicos y cierre</p>
+<ul>
+<li>Mezclar ‘Nix + conda’ es factible pero introduce una capa menos declarativa (‘conda’). Para reproducibilidad académica estricta, preferir ‘Nix-native’ (‘nixpkgs/pypi2nix/poetry2nix’). Si se necesita ‘conda’ por razones prácticas (paquetes no disponibles en ‘nixpkgs’, flujo de trabajo del equipo), documentar la receta (‘environment.yml’, comando de creación) y versionar el archivo junto al proyecto; idealmente incorporar la creación del entorno ‘’conda’’ en ‘CI’ para asegurar consistencia operativa aunque no absoluta bit-reproducible. ‘Nix’ (por medio de ‘rix’) gestiona ‘git’ y otras dependencias del sistema de forma nativa y declarativa; ‘conda’ puede proveer muchos binarios pero no reemplaza la gestión total de librerías del sistema ni ofrece la misma trazabilidad.</li>
+</ul>
+</div>
+</div>
+<section id="ejemplo-de-github-problema" class="level5" data-number="0.3.1.2.1">
+<h5 data-number="0.3.1.2.1" class="anchored" data-anchor-id="ejemplo-de-github-problema"><span class="header-section-number">0.3.1.2.1</span> Ejemplo de Github problema</h5>
+</section>
+</section>
+</section>
+</section>
+<section id="repository-cleanup-and-github-push-issues" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Repository Cleanup and GitHub Push Issues</h1>
+<p>You’re facing several related issues with large files and Git history cleaning. Let’s solve this systematically:</p>
+<section id="root-issues" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="root-issues"><span class="header-section-number">1.1</span> Root Issues</h2>
+<ol type="1">
+<li><strong>Large files in Git history</strong>:
+<ul>
+<li><code>data/raw/obis/orites_astreoides_obis_data.csv</code> (54.69 MB)</li>
+<li><code>data/raw/acropora_data.csv</code> (117.00 MB)</li>
+</ul></li>
+<li><strong>Tool problems</strong>:
+<ul>
+<li>BFG requires a newer Java version</li>
+<li>Changes to build_env.R get reverted</li>
+<li>Git cleaning scripts aren’t targeting the specific CSV files</li>
+</ul></li>
+</ol>
+</section>
+<section id="complete-solution" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="complete-solution"><span class="header-section-number">1.2</span> Complete Solution</h2>
+<p>Let’s create an enhanced version of your quick_fix_git.sh script that specifically targets the problematic files:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Complete repository cleanup script</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"🧹 Repository Deep Cleanup"</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"=========================="</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"This script will:"</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  1. Create a backup of your repository"</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  2. Remove large CSV files from Git history"</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  3. Create proper .gitignore entries"</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  4. Set up a clean repository ready for GitHub"</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="bu">read</span> <span class="at">-p</span> <span class="st">"Continue? (y/n): "</span> <span class="at">-n</span> 1 <span class="at">-r</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">[[</span> <span class="ot">!</span> <span class="va">$REPLY</span> <span class="ot">=~</span> <span class="pp">^</span><span class="op">[</span><span class="ss">Yy</span><span class="op">]$</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"Operation cancelled."</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 0</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create backup</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="va">BACKUP_DIR</span><span class="op">=</span><span class="st">"../biologia-marina-backup-</span><span class="va">$(</span><span class="fu">date</span> +%Y%m%d-%H%M%S<span class="va">)</span><span class="st">"</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"📦 Creating backup in </span><span class="va">$BACKUP_DIR</span><span class="st">..."</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> . <span class="st">"</span><span class="va">$BACKUP_DIR</span><span class="st">"</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"✓ Backup created"</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Remove specific large files using git filter-repo</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"🔧 Removing large files from history..."</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure git-filter-repo is available</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="bu">command</span> <span class="at">-v</span> git-filter-repo <span class="op">&amp;&gt;</span> /dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"⚠️ git-filter-repo not found. Installing..."</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pip</span> install <span class="at">--user</span> git-filter-repo</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ot">! </span><span class="bu">command</span> <span class="at">-v</span> git-filter-repo <span class="op">&amp;&gt;</span> /dev/null<span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>        <span class="bu">echo</span> <span class="st">"❌ Failed to install git-filter-repo. Try adding it manually:"</span></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>        <span class="bu">echo</span> <span class="st">"    pip install --user git-filter-repo"</span></span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>        <span class="bu">exit</span> 1</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Add explicit patterns for CSV files</span></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Removing large CSV files..."</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path</span> <span class="st">'data/raw/obis/orites_astreoides_obis_data.csv'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path</span> <span class="st">'data/raw/acropora_data.csv'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean additional data files</span></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Removing other large data files..."</span></span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path-glob</span> <span class="st">'data/raw/*.csv'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path-glob</span> <span class="st">'*.rds'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path</span> <span class="st">'_targets/objects'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> filter-repo <span class="at">--path-glob</span> <span class="st">'*.RData'</span> <span class="at">--invert-paths</span> <span class="at">--force</span></span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Update .gitignore</span></span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"📄 Creating proper .gitignore..."</span></span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> .gitignore <span class="op">&lt;&lt; 'GITIGNORE'</span></span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a><span class="st"># R and RStudio files</span></span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a><span class="st">.Rproj.user/</span></span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a><span class="st">.Rhistory</span></span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a><span class="st">.RData</span></span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a><span class="st">.Ruserdata</span></span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a><span class="st">*.Rproj</span></span>
+<span id="cb13-64"><a href="#cb13-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-65"><a href="#cb13-65" aria-hidden="true" tabindex="-1"></a><span class="st"># targets</span></span>
+<span id="cb13-66"><a href="#cb13-66" aria-hidden="true" tabindex="-1"></a><span class="st">_targets/</span></span>
+<span id="cb13-67"><a href="#cb13-67" aria-hidden="true" tabindex="-1"></a><span class="st">!_targets.R</span></span>
+<span id="cb13-68"><a href="#cb13-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-69"><a href="#cb13-69" aria-hidden="true" tabindex="-1"></a><span class="st"># Large data files</span></span>
+<span id="cb13-70"><a href="#cb13-70" aria-hidden="true" tabindex="-1"></a><span class="st">*.rds</span></span>
+<span id="cb13-71"><a href="#cb13-71" aria-hidden="true" tabindex="-1"></a><span class="st">*.RData</span></span>
+<span id="cb13-72"><a href="#cb13-72" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/*.csv</span></span>
+<span id="cb13-73"><a href="#cb13-73" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/obis/*.csv</span></span>
+<span id="cb13-74"><a href="#cb13-74" aria-hidden="true" tabindex="-1"></a><span class="st">data/processed/*.csv</span></span>
+<span id="cb13-75"><a href="#cb13-75" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/environmental/*.tif</span></span>
+<span id="cb13-76"><a href="#cb13-76" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/environmental/*.asc</span></span>
+<span id="cb13-77"><a href="#cb13-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-78"><a href="#cb13-78" aria-hidden="true" tabindex="-1"></a><span class="st"># Nix</span></span>
+<span id="cb13-79"><a href="#cb13-79" aria-hidden="true" tabindex="-1"></a><span class="st">result</span></span>
+<span id="cb13-80"><a href="#cb13-80" aria-hidden="true" tabindex="-1"></a><span class="st">result-*</span></span>
+<span id="cb13-81"><a href="#cb13-81" aria-hidden="true" tabindex="-1"></a><span class="st">*.backup</span></span>
+<span id="cb13-82"><a href="#cb13-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-83"><a href="#cb13-83" aria-hidden="true" tabindex="-1"></a><span class="st"># System</span></span>
+<span id="cb13-84"><a href="#cb13-84" aria-hidden="true" tabindex="-1"></a><span class="st">.DS_Store</span></span>
+<span id="cb13-85"><a href="#cb13-85" aria-hidden="true" tabindex="-1"></a><span class="st">*.swp</span></span>
+<span id="cb13-86"><a href="#cb13-86" aria-hidden="true" tabindex="-1"></a><span class="st">*~</span></span>
+<span id="cb13-87"><a href="#cb13-87" aria-hidden="true" tabindex="-1"></a><span class="op">GITIGNORE</span></span>
+<span id="cb13-88"><a href="#cb13-88" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add .gitignore</span>
+<span id="cb13-89"><a href="#cb13-89" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Update .gitignore to exclude large data files"</span></span>
+<span id="cb13-90"><a href="#cb13-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-91"><a href="#cb13-91" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Update build_env.R to include git-filter-repo</span></span>
+<span id="cb13-92"><a href="#cb13-92" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"📝 Updating build_env.R..."</span></span>
+<span id="cb13-93"><a href="#cb13-93" aria-hidden="true" tabindex="-1"></a><span class="fu">sed</span> <span class="at">-i</span> <span class="st">'s/"git",/"git", "git-filter-repo",/'</span> build_env.R</span>
+<span id="cb13-94"><a href="#cb13-94" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add build_env.R</span>
+<span id="cb13-95"><a href="#cb13-95" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add git-filter-repo to system packages"</span></span>
+<span id="cb13-96"><a href="#cb13-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-97"><a href="#cb13-97" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Clean and optimize repo</span></span>
+<span id="cb13-98"><a href="#cb13-98" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"🧹 Optimizing repository..."</span></span>
+<span id="cb13-99"><a href="#cb13-99" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> gc <span class="at">--aggressive</span> <span class="at">--prune</span><span class="op">=</span>now</span>
+<span id="cb13-100"><a href="#cb13-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-101"><a href="#cb13-101" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Instructions</span></span>
+<span id="cb13-102"><a href="#cb13-102" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-103"><a href="#cb13-103" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"✅ Repository cleaned successfully!"</span></span>
+<span id="cb13-104"><a href="#cb13-104" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-105"><a href="#cb13-105" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Repository size: </span><span class="va">$(</span><span class="fu">du</span> <span class="at">-sh</span> .git <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-f1</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb13-106"><a href="#cb13-106" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-107"><a href="#cb13-107" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"To push to GitHub:"</span></span>
+<span id="cb13-108"><a href="#cb13-108" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  1. Create a new empty repository on GitHub (don't initialize it)"</span></span>
+<span id="cb13-109"><a href="#cb13-109" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  2. Run these commands:"</span></span>
+<span id="cb13-110"><a href="#cb13-110" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-111"><a href="#cb13-111" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"     git remote add origin https://github.com/YOUR-USERNAME/biologia-marina-reproducible.git"</span></span>
+<span id="cb13-112"><a href="#cb13-112" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"     git push -u --force origin main"</span></span>
+<span id="cb13-113"><a href="#cb13-113" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span>
+<span id="cb13-114"><a href="#cb13-114" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"If issues persist, consider a fresh start with a new repository:"</span></span>
+<span id="cb13-115"><a href="#cb13-115" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  1. Create a new empty directory"</span></span>
+<span id="cb13-116"><a href="#cb13-116" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  2. Copy all your current files (except .git folder)"</span></span>
+<span id="cb13-117"><a href="#cb13-117" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"  3. Initialize a new Git repository there"</span></span>
+<span id="cb13-118"><a href="#cb13-118" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">""</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="using-the-solution" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="using-the-solution"><span class="header-section-number">1.3</span> Using the solution</h2>
+<ol type="1">
+<li><p><strong>Create and run the fix script</strong>:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x fix_repository.sh</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./fix_repository.sh</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p><strong>If the script doesn’t fully resolve the issue</strong>, go with the clean-start approach:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create new directory</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ~/biologia-marina-fresh</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy files (excluding .git directory)</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-av</span> <span class="at">--exclude</span><span class="op">=</span><span class="st">'.git/'</span> ~/Projects/biologia-marina-reproducible/ ~/biologia-marina-fresh/</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize new repository</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/biologia-marina-fresh</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> init</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial commit with clean history"</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Add GitHub remote and push</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> remote add origin https://github.com/santi-rios/biologia-marina-reproducible.git</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push <span class="at">-u</span> origin main <span class="at">--force</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+</ol>
+</section>
+<section id="updating-the-build_env.r-file" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="updating-the-build_env.r-file"><span class="header-section-number">1.4</span> Updating the build_env.R file</h2>
+<p>To ensure <code>git-filter-repo</code> stays in your build_env.R:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>system_pkgs <span class="ot">=</span> <span class="fu">c</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"git"</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"git-filter-repo"</span>,  <span class="co"># For cleaning Git history</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"python3"</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"quarto"</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"bfg-repo-cleaner"</span> <span class="co"># alternative to git-filter-branch</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  ),</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Remember that the BFG tool is having compatibility issues with your Java version, which is why adding <code>git-filter-repo</code> is important as a more reliable alternative.</p>
+<section id="adquisición-de-datos" class="level3" data-number="1.4.1">
+<h3 data-number="1.4.1" class="anchored" data-anchor-id="adquisición-de-datos"><span class="header-section-number">1.4.1</span> Adquisición de Datos</h3>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Resumen de adquisición de datos de ocurrencia</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Fuente</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Registros</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">OBIS</td>
+<td style="text-align: right;">46848</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GBIF</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Combinados</td>
+<td style="text-align: right;">46848</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Limpios</td>
+<td style="text-align: right;">249</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>El pipeline integra datos de dos fuentes principales:</p>
+<ul>
+<li><strong>OBIS (Ocean Biodiversity Information System)</strong>: Base de datos especializada en biodiversidad marina</li>
+<li><strong>GBIF (Global Biodiversity Information Facility)</strong>: Repositorio global de datos de biodiversidad</li>
+</ul>
+</section>
+<section id="limpieza-y-validación-de-datos" class="level3" data-number="1.4.2">
+<h3 data-number="1.4.2" class="anchored" data-anchor-id="limpieza-y-validación-de-datos"><span class="header-section-number">1.4.2</span> Limpieza y Validación de Datos</h3>
+<p>Utilizamos el paquete <code>CoordinateCleaner</code> para implementar un protocolo de limpieza comprehensivo:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Métricas de calidad de datos después de la limpieza</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Métrica</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Porcentaje</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Completitud de coordenadas</td>
+<td style="text-align: right;">100.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Completitud taxonómica</td>
+<td style="text-align: right;">100.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Completitud temporal</td>
+<td style="text-align: right;">100.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Registros con profundidad</td>
+<td style="text-align: right;">85.1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="resultados" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="resultados"><span class="header-section-number">1.5</span> Resultados</h2>
+<section id="distribución-espacial-de-especies" class="level3" data-number="1.5.1">
+<h3 data-number="1.5.1" class="anchored" data-anchor-id="distribución-espacial-de-especies"><span class="header-section-number">1.5.1</span> Distribución Espacial de Especies</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-23f8137e72dce8d88134" style="width:100%;height:2100px;"></div>
+<script type="application/json" data-for="htmlwidget-23f8137e72dce8d88134">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addProviderTiles","args":["CartoDB.Positron",null,null,{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addCircleMarkers","args":[[25.1601009369,20.4021892548,24.751329422,25.1288509369,24.6306705475,24.8438339233,24.4395008087,21.8343162537,18.2191829681,25.0636692047,22.1587657928,20.3964805603,24.6259002686,24.5958309174,18.4946842194,24.8449306488,25.1437492371,20.0974998474,24.8775005341,24.8438301086,20.1058330536,11.2498779297,24.2531509399,24.74518013,24.3431491852,18.2340164185,18.173500061,25.1026000977,24.5064296722,24.5402202606,12.1881713867,18.4577827454,21.8094329834,24.5447998047,10.4783058167],[-78.0028991699,-87.3029785156,-77.8076705933,-77.9830322266,-77.6910018921,-77.8573303223,-77.6980667114,-84.4898300171,-78.29094696040001,-77.937828064,-81.513168335,-87.30657958979999,-77.6931762695,-77.6933288574,-77.93454742430001,-77.86097717289999,-77.987449646,-87.46305847169999,-77.8790969849,-77.8573303223,-87.4594421387,-74.22007751460001,-77.6291732788,-77.7786331177,-77.6706771851,-76.6051330566,-78.1641693115,-77.9638671875,-77.69696807859999,-77.6820678711,-71.98198699949999,-78.01258087159999,-84.5137176514,-77.6837234497,-67.8082275391],3,null,"Acropora cervicornis",{"interactive":true,"className":"","stroke":false,"color":"#E31A1C","weight":5,"opacity":0.5,"fill":true,"fillColor":"#E31A1C","fillOpacity":0.7},null,null,["<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1987","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora cervicornis<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1994"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addCircleMarkers","args":[[24.7291698456,24.3069000244,25.1601009369,25.1288509369,24.8449993134,18.2191829681,24.7743492126,8.6420555,24.3670291901,24.8442497253,24.2916698456,24.2531509399,9.738333702,24.6259002686,24.3013000488,21.843334198,24.4839992523,24.3431491852,24.751329422,24.6995296478,18.173500061,24.4395008087,9.738333702089999,24.8449306488,8.662138799999999,24.6306705475,25.0636692047,8.068169594,20.4021892548,18.4577827454,24.5447998047,8.672166600000001,20.4076499939,20.3964805603,18.1911506653,18.3748664856,24.8421707153,20.3997993469,18.4148674011,18.4686107635,18.46222,18.4565830231,18.4097671509,18.3184661865,18.4658336639,8.06816959381,25.1026000977,11.2962694168,24.8438339233],[-77.7701721191,-77.6563796997,-78.0028991699,-77.9830322266,-77.861000061,-78.29094696040001,-77.8077163696,-77.33625000000001,-77.6823501587,-77.856300354,-77.6462020874,-77.6291732788,-82.80500031,-77.6931762695,-77.6478805542,-77.4655532837,-77.6989974976,-77.6706771851,-77.8076705933,-77.7434310913,-78.1641693115,-77.6980667114,-82.8050003052,-77.86097717289999,-77.3587222,-77.6910018921,-77.937828064,-76.74440765,-87.3029785156,-78.01258087159999,-77.6837234497,-77.3566666,-87.2991027832,-87.30657958979999,-76.4569320679,-76.8740310669,-77.8585968018,-87.3059768677,-77.1014328003,-78.1224975586,-66.0517,-77.95421600340001,-76.98328399659999,-76.8031997681,-78.1269454956,-76.7444076538,-77.9638671875,-74.1931838989,-77.8573303223],3,null,"Acropora palmata",{"interactive":true,"className":"","stroke":false,"color":"#1F78B4","weight":5,"opacity":0.5,"fill":true,"fillColor":"#1F78B4","fillOpacity":0.7},null,null,["<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2011","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2011","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2012","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2018","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Acropora palmata<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addCircleMarkers","args":[[18.7083339691,18.3748664856,24.8449993134,18.328332901,9.03661155701,18.23353,24.3431491852,18.4097671509,8.672166600000001,11.2958888,9.725000380999999,8.662138799999999,18.4686107635,18.4150657654,20.3922290802,22.1539993286,12.1945278,17.9621200562,9.75,8.638999999999999,8.670416599999999,12.192,24.8442497253,8.6420555,17.9633407593,18.2191829681,18.2335,18.3543834686,24.5402202606,24.3013000488,24.5263309479,12.180861,-7.17176,12.183389,18.4193172455,12.1811667,18.4565830231,24.2531509399,24.2916698456,18.3184661865,17.9631595612,9.72500038147,17.963350296,17.9679508209,18.173500061,21.8094329834,18.48916,-8.9,18.4658336639,12.1799722,17.9710693359,12.181667,24.6259002686,11.90638,18.4927005768,18.4534492493,24.3012199402,18.2340164185,8.6167222,24.3011207581,24.4833297729,18.46222,24.5958309174,18.4963665009,18.4577827454,17.9686508179,24.6306705475,24.439250946,24.74518013,24.7743492126,18.4641666412,18.48955,24.6259994507,17.9635105133,18.1893,17.9621200562,24.7450008392,24.5064296722,12.192,-9.024255999999999,9.036611557000001,24.3011207581,25.1026000977,24.8438301086,-22.96514167,9.738333702089999,17.9633407593,24.7014694214,18.4590835571,8.37166023254,17.9626598358,18.1911506653,8.371660233,12.1816667,24.6995296478,18.2745342255,-9.032689,24.3069000244,25.0636692047,9.75,18.2696342468,20.4021892548,21.8343162537,17.9586696625,17.9686203003,20.0974998474,9.738333702,12.1881713867,17.9737701416,22.1587657928,24.7678203583,18.4412994385,11.2498779297,21.9311103821,17.9598808289,24.8792705536,20.3997993469,17.9627094269,21.8458328247,20.4076499939,17.964969635,12.1833389,17.9639396667,25.1437492371,9.55000019073,10.4783058167,11.0345333,17.9636001587,12.1822778,-9.666666666999999,12.1808611,-8.75,18.4946842194,24.3670291901,24.6306667328,17.9608707428,12.1599998474,-17.1175,17.9629802704,17.9535198212,-8.761944443999999,18.4190502167,11.2668399811,-23.11549,17.9613208771,9.550000191000001,17.9651603699,12.1815662384,-17.003889,17.9618797302,17.9693508148,17.9609909058,17.96393013,20.3964805603,20.1141662598,8.06816959381,25.1601009369,11.2962694168,17.9607601166,-8.762777778,8.068169594,24.8449306488,24.8438339233,17.9586906433,17.9669895172],[-87.70555877690001,-76.8740310669,-77.861000061,-87.8333358765,-76.1847229004,-67.20057,-77.6706771851,-76.98328399659999,-77.3566666,-74.19277769999999,-82.805336,-77.3587222,-78.1224975586,-77.0054855347,-87.3093490601,-81.47765350340001,-71.9944722,-67.033203125,-82.80583190919999,-77.3446666,-77.35866660000001,-71.989722,-77.856300354,-77.33625000000001,-67.0467910767,-78.29094696040001,-67.20092,-76.8469467163,-77.6820678711,-77.6478805542,-77.6892166138,-71.963083,-34.78474,-71.962306,-77.1182022095,-71.98466670000001,-77.95421600340001,-77.6291732788,-77.6462020874,-76.8031997681,-67.0456771851,-82.8053359985,-67.0239562988,-67.04443359379999,-78.1641693115,-84.5137176514,-66.3736,-35.13333333,-78.1269454956,-71.9632222,-67.0605621338,-71.97975,-77.6931762695,-71.28148,-77.5951309204,-77.9709472656,-77.6478805542,-76.6051330566,-77.3268611,-77.6529464722,-77.69650268549999,-66.0517,-77.6933288574,-77.6317520142,-78.01258087159999,-67.0372619629,-77.6910018921,-77.69616699220001,-77.7786331177,-77.8077163696,-78.1318817139,-66.3736,-77.6910018921,-67.0173492432,-67.1919,-67.0332489014,-77.78466796879999,-77.69696807859999,-71.9897222,-35.191486,-76.1847229,-77.6477966309,-77.9638671875,-77.8573303223,-42.00165556,-82.8050003052,-67.04679870610001,-77.7401504517,-78.0753479004,-76.90097045900001,-66.9899673462,-76.4569320679,-76.90097046,-71.97975,-77.7434310913,-76.70868682859999,-35.192744,-77.6563796997,-77.937828064,-82.80583190999999,-76.68979644780001,-87.3029785156,-84.4898300171,-67.0689163208,-67.03703308110001,-87.46305847169999,-82.80500031,-71.98198699949999,-67.0634384155,-81.513168335,-77.7986984253,-77.2076187134,-74.22007751460001,-77.53778076170001,-67.0697402954,-77.87837219239999,-87.3059768677,-67.025680542,-77.46389007569999,-87.2991027832,-67.0563583374,-71.9631389,-67.05072021479999,-77.987449646,-79.6169967651,-67.8082275391,-74.4063333,-67.0484237671,-71.9680833,-35.7,-71.96308329999999,-35.0833333333333,-77.93454742430001,-77.6823501587,-77.6910018921,-67.06285095210001,-71.9700012207,-39.18,-66.9876937866,-67.07671356199999,-35.09305556,-77.07846832280001,-74.2025222778,-44.26958,-67.0091094971,-79.61699677,-67.0247879028,-71.96002960209999,-39.126944,-67.0093917847,-67.01490020750001,-67.0009231567,-67.0323181152,-87.30657958979999,-87.4563903809,-76.7444076538,-78.0028991699,-74.1931838989,-67.0632400513,-35.09305556,-76.74440765,-77.86097717289999,-77.8573303223,-67.0689163208,-67.0020523071],3,null,"Porites astreoides",{"interactive":true,"className":"","stroke":false,"color":"#33A02C","weight":5,"opacity":0.5,"fill":true,"fillColor":"#33A02C","fillOpacity":0.7},null,null,["<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2016","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2012","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2016","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2016","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2018","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2005","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2011","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2010","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2003","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2023","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2013","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2007","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2021","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2003","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2016","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2009","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2012","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2010","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1977","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1977","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2009","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2012","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2003","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1987","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2008","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2009","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1969","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1994","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2016","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2005","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1991","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2009","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1979","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2007","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2010","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1991","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1972","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2009","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2008","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1969","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2007","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2001","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2000","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2004","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2003","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1999","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2008","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1981","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1973","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1998","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 1997","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2002","<b>Especie:<\/b> Porites astreoides<br><b>Fuente:<\/b> OBIS<br><b>Año:<\/b> 2006"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addLayersControl","args":[[],["Acropora cervicornis","Acropora palmata","Porites astreoides"],{"collapsed":false,"autoZIndex":true,"position":"topright"}]}],"setView":[[17.3862778456737,-74.47711288984191],6,[]],"limits":{"lat":[-23.11549,25.1601009369],"lng":[-87.8333358765,-34.78474]}},"evals":[],"jsHooks":[]}</script>
+<p>Distribución espacial de registros de ocurrencia por especie</p>
+</div>
+</div>
+</section>
+<section id="análisis-de-idoneidad-de-hábitat" class="level3" data-number="1.5.2">
+<h3 data-number="1.5.2" class="anchored" data-anchor-id="análisis-de-idoneidad-de-hábitat"><span class="header-section-number">1.5.2</span> Análisis de Idoneidad de Hábitat</h3>
+</section>
+<section id="análisis-espacial-comprehensivo" class="level3" data-number="1.5.3">
+<h3 data-number="1.5.3" class="anchored" data-anchor-id="análisis-espacial-comprehensivo"><span class="header-section-number">1.5.3</span> Análisis Espacial Comprehensivo</h3>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Métricas espaciales del análisis de distribución</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Métrica</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Número de ocurrencias</td>
+<td style="text-align: right;">249.000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rango latitudinal (°)</td>
+<td style="text-align: right;">48.280</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Rango longitudinal (°)</td>
+<td style="text-align: right;">53.050</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Centroide latitudinal (°)</td>
+<td style="text-align: right;">17.386</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Centroide longitudinal (°)</td>
+<td style="text-align: right;">-74.477</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Área de ocupación (km²)</td>
+<td style="text-align: right;">408.000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Número de celdas de grilla</td>
+<td style="text-align: right;">102.000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="nicho-ambiental" class="level3" data-number="1.5.4">
+<h3 data-number="1.5.4" class="anchored" data-anchor-id="nicho-ambiental"><span class="header-section-number">1.5.4</span> Nicho Ambiental</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="analisis_biodiversidad_marina_files/figure-html/environmental-niche-analysis-1.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<figcaption>Análisis del nicho ambiental de las especies marinas</figcaption>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+*Nota: Las estadísticas ambientales muestran las condiciones preferidas por las especies en sus hábitats naturales.*</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="base-de-datos-integrada" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="base-de-datos-integrada"><span class="header-section-number">1.6</span> Base de Datos Integrada</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div class="datatables html-widget html-fill-item" id="htmlwidget-1b31f6f264435597af64" style="width:100%;height:auto;"></div>
+<script type="application/json" data-for="htmlwidget-1b31f6f264435597af64">{"x":{"filter":"top","vertical":false,"filterHTML":"<tr>\n  <td data-type=\"character\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n  <\/td>\n  <td data-type=\"integer\" style=\"vertical-align: top;\">\n    <div class=\"form-group has-feedback\" style=\"margin-bottom: auto;\">\n      <input type=\"search\" placeholder=\"All\" class=\"form-control\" style=\"width: 100%;\"/>\n      <span class=\"glyphicon glyphicon-remove-circle form-control-feedback\"><\/span>\n    <\/div>\n    <div style=\"display: none;position: absolute;width: 200px;opacity: 1\">\n      <div data-min=\"35\" data-max=\"165\"><\/div>\n      <span style=\"float: left;\"><\/span>\n      <span style=\"float: right;\"><\/span>\n    <\/div>\n  <\/td>\n<\/tr>","caption":"<caption>Resumen de especies en la base de datos integrada<\/caption>","data":[["Porites astreoides","Acropora palmata","Acropora cervicornis"],[165,49,35]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>scientificName<\/th>\n      <th>n_records<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"scrollX":true,"dom":"Bfrtip","buttons":["copy","csv","excel"],"columnDefs":[{"targets":1,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 0, 3, \",\", \".\", null);\n  }"},{"className":"dt-right","targets":1},{"name":"scientificName","targets":0},{"name":"n_records","targets":1}],"order":[],"autoWidth":false,"orderClasses":false,"orderCellsTop":true}},"evals":["options.columnDefs.0.render"],"jsHooks":[]}</script>
+</div>
+</div>
+<p>La base de datos integrada utiliza <strong>DuckDB</strong> como backend NoSQL, permitiendo:</p>
+<ul>
+<li><strong>Almacenamiento eficiente</strong> de datos heterogéneos (ocurrencias, taxonomía, ambiente)</li>
+<li><strong>Consultas flexibles</strong> usando sintaxis SQL y JSON</li>
+<li><strong>Exportación múltiple</strong> a formatos CSV, JSON, y Parquet</li>
+<li><strong>Escalabilidad</strong> para grandes volúmenes de datos</li>
+</ul>
+</section>
+<section id="implicaciones-para-la-conservación" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="implicaciones-para-la-conservación"><span class="header-section-number">1.7</span> I===mplicaciones para la Conservación</h2>
+<section id="especies-prioritarias" class="level3" data-number="1.7.1">
+<h3 data-number="1.7.1" class="anchored" data-anchor-id="especies-prioritarias"><span class="header-section-number">1.7.1</span> Especies Prioritarias</h3>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+### Análisis Temporal
+
+**Resumen temporal del dataset:**
+
+- Período: 1969 - 2023 
+- Años únicos con datos: 30 
+- Distribución por décadas: 1970s: 12 | 1980s: 3 | 1990s: 115 | 2000s: 91 | 2010s: 18 | 2020s: 8 </code></pre>
+</div>
+</div>
+</section>
+<section id="recomendaciones-de-manejo" class="level3" data-number="1.7.2">
+<h3 data-number="1.7.2" class="anchored" data-anchor-id="recomendaciones-de-manejo"><span class="header-section-number">1.7.2</span> Recomendaciones de Manejo</h3>
+<p>Basándose en los resultados del análisis, se proponen las siguientes estrategias de conservación:</p>
+<section id="protección-de-hábitats-críticos" class="level4" data-number="1.7.2.1">
+<h4 data-number="1.7.2.1" class="anchored" data-anchor-id="protección-de-hábitats-críticos"><span class="header-section-number">1.7.2.1</span> 1. <strong>Protección de Hábitats Críticos</strong></h4>
+<ul>
+<li>Establecer áreas marinas protegidas en zonas de alta idoneidad</li>
+<li>Monitorear cambios en las condiciones ambientales clave</li>
+<li>Implementar medidas de mitigación contra el cambio climático</li>
+</ul>
+</section>
+<section id="monitoreo-y-vigilancia" class="level4" data-number="1.7.2.2">
+<h4 data-number="1.7.2.2" class="anchored" data-anchor-id="monitoreo-y-vigilancia"><span class="header-section-number">1.7.2.2</span> 2. <strong>Monitoreo y Vigilancia</strong></h4>
+<ul>
+<li>Desarrollar programas de monitoreo a largo plazo</li>
+<li>Utilizar tecnologías de detección temprana</li>
+<li>Capacitar a comunidades locales en identificación de especies</li>
+</ul>
+</section>
+<section id="restauración-ecológica" class="level4" data-number="1.7.2.3">
+<h4 data-number="1.7.2.3" class="anchored" data-anchor-id="restauración-ecológica"><span class="header-section-number">1.7.2.3</span> 3. <strong>Restauración Ecológica</strong></h4>
+<ul>
+<li>Identificar áreas históricamente importantes pero actualmente degradadas</li>
+<li>Implementar programas de restauración basados en ciencia</li>
+<li>Evaluar el éxito de las intervenciones de restauración</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="análisis-evolutivo-y-adaptación" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="análisis-evolutivo-y-adaptación"><span class="header-section-number">1.8</span> Análisis Evolutivo y Adaptación</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>### Perspectivas Evolutivas</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>El análisis filoestratigráfico revela patrones importantes sobre la evolución y adaptación de las especies marinas:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>- **Genes antiguos** conservados indican funciones esenciales para la supervivencia marina</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>- **Genes de origen reciente** pueden representar adaptaciones específicas al ambiente marino</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>- **Patrones de expresión** durante el desarrollo sugieren estrategias evolutivas de supervivencia</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Estas perspectivas son cruciales para:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1. **Programas de cría selectiva** para aumentar la resistencia climática</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2. **Estrategias de restauración** basadas en diversidad genética</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>3. **Predicción de respuestas** a cambios ambientales futuros</code></pre>
+</div>
+</div>
+</section>
+<section id="limitaciones-y-perspectivas-futuras" class="level2" data-number="1.9">
+<h2 data-number="1.9" class="anchored" data-anchor-id="limitaciones-y-perspectivas-futuras"><span class="header-section-number">1.9</span> Limitaciones y Perspectivas Futuras</h2>
+<section id="limitaciones-del-estudio" class="level3" data-number="1.9.1">
+<h3 data-number="1.9.1" class="anchored" data-anchor-id="limitaciones-del-estudio"><span class="header-section-number">1.9.1</span> Limitaciones del Estudio</h3>
+<ol type="1">
+<li><strong>Sesgos de muestreo</strong>: Los datos de ocurrencia pueden estar sesgados hacia áreas de fácil acceso</li>
+<li><strong>Resolución temporal</strong>: La variabilidad interanual y estacional no está completamente capturada</li>
+<li><strong>Variables ambientales</strong>: Limitadas a las disponibles en bases de datos globales</li>
+<li><strong>Validación de modelos</strong>: Se requiere validación independiente con datos de campo</li>
+</ol>
+</section>
+<section id="direcciones-futuras" class="level3" data-number="1.9.2">
+<h3 data-number="1.9.2" class="anchored" data-anchor-id="direcciones-futuras"><span class="header-section-number">1.9.2</span> Direcciones Futuras</h3>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<caption>Direcciones prioritarias para investigación futura</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Área.de.investigación</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Descripción</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Prioridad</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Integración de datos genómicos</td>
+<td style="text-align: left;">Incorporar datos de secuenciación para análisis poblacionales</td>
+<td style="text-align: left;">Alta</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Modelado de cambio climático</td>
+<td style="text-align: left;">Proyectar distribuciones futuras bajo escenarios climáticos</td>
+<td style="text-align: left;">Alta</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Análisis de conectividad</td>
+<td style="text-align: left;">Analizar flujo genético y dispersión larval</td>
+<td style="text-align: left;">Media</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Monitoreo en tiempo real</td>
+<td style="text-align: left;">Implementar sensores IoT para datos continuos</td>
+<td style="text-align: left;">Media</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Inteligencia artificial</td>
+<td style="text-align: left;">Desarrollar modelos de aprendizaje automático avanzados</td>
+<td style="text-align: left;">Baja</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="conclusiones" class="level2" data-number="1.10">
+<h2 data-number="1.10" class="anchored" data-anchor-id="conclusiones"><span class="header-section-number">1.10</span> Conclusiones</h2>
+<p>El pipeline integrado de análisis de biodiversidad marina ha demostrado ser una herramienta poderosa para:</p>
+<ol type="1">
+<li><strong>Integrar múltiples fuentes de datos</strong> de manera eficiente y reproducible</li>
+<li><strong>Validar y limpiar datos</strong> usando estándares internacionales</li>
+<li><strong>Generar modelos predictivos</strong> de distribución de especies</li>
+<li><strong>Identificar prioridades de conservación</strong> basadas en evidencia científica</li>
+<li><strong>Proporcionar insights evolutivos</strong> relevantes para la conservación</li>
+</ol>
+<p>Los resultados resaltan la importancia de enfoques integrados que combinen datos de ocurrencia, variables ambientales, y análisis evolutivos para informar estrategias efectivas de conservación marina.</p>
+<section id="impacto-para-la-conservación" class="level3" data-number="1.10.1">
+<h3 data-number="1.10.1" class="anchored" data-anchor-id="impacto-para-la-conservación"><span class="header-section-number">1.10.1</span> Impacto para la Conservación</h3>
+<ul>
+<li><strong>Identificación de especies vulnerables</strong> con distribuciones restringidas</li>
+<li><strong>Mapeo de hábitats críticos</strong> que requieren protección prioritaria<br>
+</li>
+<li><strong>Desarrollo de estrategias adaptativas</strong> para el cambio climático</li>
+<li><strong>Optimización de esfuerzos de monitoreo</strong> y recursos limitados</li>
+</ul>
+<p>Este enfoque metodológico puede replicarse para otras regiones y grupos taxonómicos, contribuyendo al conocimiento global sobre biodiversidad marina y su conservación.</p>
+<hr>
+</section>
+</section>
+<section id="referencias" class="level2" data-number="1.11">
+<h2 data-number="1.11" class="anchored" data-anchor-id="referencias"><span class="header-section-number">1.11</span> Referencias</h2>
+<p><em>Las referencias bibliográficas se incluirían aquí en un análisis completo, citando las fuentes de datos, métodos estadísticos, y literatura científica relevante.</em></p>
+</section>
+<section id="información-de-sesión" class="level2" data-number="1.12">
+<h2 data-number="1.12" class="anchored" data-anchor-id="información-de-sesión"><span class="header-section-number">1.12</span> Información de Sesión</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.5.1 (2025-06-13)
+Platform: x86_64-pc-linux-gnu
+Running under: Pop!_OS 22.04 LTS
+
+Matrix products: default
+BLAS/LAPACK: /nix/store/88j7f0rbpihkl11q3q7hb0h7vv8whnz5-blas-3/lib/libblas.so.3;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: America/Mexico_City
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] tidyr_1.3.1    leaflet_2.2.2  plotly_4.11.0  ggplot2_3.5.2  DT_0.33       
+[6] knitr_1.50     dplyr_1.1.4    targets_1.11.3
+
+loaded via a namespace (and not attached):
+ [1] KEGGREST_1.48.1         gtable_0.3.6            bslib_0.9.0            
+ [4] raster_3.6-32           xfun_0.52               htmlwidgets_1.6.4      
+ [7] processx_3.8.6          lattice_0.22-7          Biobase_2.68.0         
+[10] callr_3.7.6             leaflet.providers_2.0.0 vctrs_0.6.5            
+[13] tools_4.5.1             crosstalk_1.2.1         ps_1.9.1               
+[16] generics_0.1.4          stats4_4.5.1            base64url_1.4          
+[19] tibble_3.3.0            AnnotationDbi_1.70.0    RSQLite_2.4.2          
+[22] blob_1.2.4              pkgconfig_2.0.3         data.table_1.17.8      
+[25] secretbase_1.0.5        RColorBrewer_1.1-3      S4Vectors_0.46.0       
+[28] lifecycle_1.0.4         GenomeInfoDbData_1.2.14 compiler_4.5.1         
+[31] farver_2.1.2            Biostrings_2.76.0       terra_1.8-60           
+[34] codetools_0.2-20        GenomeInfoDb_1.44.1     sass_0.4.10            
+[37] htmltools_0.5.8.1       yaml_2.3.10             lazyeval_0.2.2         
+[40] jquerylib_0.1.4         pillar_1.11.0           crayon_1.5.3           
+[43] cachem_1.1.0            tidyselect_1.2.1        digest_0.6.37          
+[46] purrr_1.1.0             labeling_0.4.3          fastmap_1.2.0          
+[49] grid_4.5.1              cli_3.6.5               magrittr_2.0.3         
+[52] withr_3.0.2             prettyunits_1.2.0       scales_1.4.0           
+[55] UCSC.utils_1.4.0        backports_1.5.0         sp_2.2-0               
+[58] bit64_4.6.0-1           rmarkdown_2.29          XVector_0.48.0         
+[61] httr_1.4.7              igraph_2.1.4            bit_4.6.0              
+[64] png_0.1-8               memoise_2.0.1           evaluate_1.0.4         
+[67] IRanges_2.42.0          viridisLite_0.4.2       rlang_1.1.6            
+[70] Rcpp_1.1.0              glue_1.8.0              DBI_1.2.3              
+[73] BiocGenerics_0.54.0     jsonlite_2.0.0          R6_2.6.1               </code></pre>
+</div>
+</div>
+<hr>
+<p><strong>Nota</strong>: Este reporte fue generado automáticamente usando el pipeline integrado de análisis de biodiversidad marina. Para más información sobre la metodología y código fuente, consultar el repositorio del proyecto.</p>
+</section>
+<section id="exploración-para-solucionar-fechas" class="level2" data-number="1.13">
+<h2 data-number="1.13" class="anchored" data-anchor-id="exploración-para-solucionar-fechas"><span class="header-section-number">1.13</span> Exploración para solucionar fechas</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>### Diagnóstico de Datos Temporales
+
+**Tipo de datos en 'year':** character 
+**Valores únicos (primeros 10):** 1997 1999 1998 2000 2001 1973 1987 1994 2011 2012 
+**Valores NA:** 0 de 249 
+
+**Tipo de datos en 'eventDate':** character 
+**Valores únicos (primeros 5):** 1997-08-17T12:00:00Z 1999-03-12T12:00:00Z 1998-08-18T12:00:00Z 1997-08-09T12:00:00Z 1997-10-19T12:00:00Z </code></pre>
+</div>
+</div>
+
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">Referencias</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-zhang2017" class="csl-entry" role="listitem">
+Zhang, Ai-bing, Meng-di Hao, Cai-qing Yang, y Zhi-yong Shi. 2017. <span>«<span>BarcodingR</span>: An Integrated r Package for Species Identification Using <span>DNA</span> Barcodes»</span>. <em>Methods in Ecology and Evolution</em> 8 (5): 627-34. <a href="https://doi.org/10.1111/2041-210X.12682">https://doi.org/10.1111/2041-210X.12682</a>.
+</div>
+</div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copiado");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copiado");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

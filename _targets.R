@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
 })
 
 # Conditional loading of optional packages
-optional_packages <- c("biomartr", "wikitaxa", "prism", "myTAI", "geotargets")
+optional_packages <- c("biomaRt", "wikitaxa", "prism", "myTAI", "geotargets")
 for (pkg in optional_packages) {
   if (requireNamespace(pkg, quietly = TRUE)) {
     message("Loaded optional package: ", pkg)

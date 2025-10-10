@@ -1,0 +1,1353 @@
+---
+title: "Análisis de Biodiversidad Marina: Pipeline Integrado para Conservación y Evolución"
+subtitle: "Reporte Técnico de Análisis Espacial y Evolutivo de Especies Marinas"
+date: "`r Sys.Date()`"
+author: "Laboratorio de Biodiversidad Marina"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    theme: cosmo
+    css: styles.css
+execute: 
+  echo: false
+  warning: false
+  message: false
+bibliography: "../referencias/referencias.bib"
+lang: es
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Cargar paquetes necesarios para el reporte
+suppressPackageStartupMessages({
+  library(targets)
+  library(dplyr)
+  library(knitr)
+  library(DT)
+  library(plotly)
+  library(leaflet)
+  library(ggplot2)  # <-- AÑADIR ESTO
+  library(tidyr)    # <-- AÑADIR ESTO
+  # library(kableExtra) # Descomentar si se usa
+})
+
+# Cargar los objetos del pipeline de targets necesarios para el reporte.
+# tar_quarto() detectará estas dependencias y ejecutará este reporte
+# solo cuando los objetos cambien.
+tar_load(
+  c(
+    "obis_occurrences",
+    "gbif_occurrences",
+    "cleaned_occurrences",
+    "spatial_analysis",
+    "habitat_models",
+    "data_summaries",
+    "pipeline_report"
+  )
+)
+
+# Crear el objeto 'loaded_targets' para verificar la disponibilidad
+target_names <- c(
+  "obis_occurrences",
+  "gbif_occurrences",
+  "cleaned_occurrences",
+  "spatial_analysis",
+  "habitat_models",
+  "data_summaries",
+  "pipeline_report"
+)
+loaded_targets <- sapply(target_names, exists, simplify = FALSE)
+
+
+# Configuración de Knitr
+knitr::opts_chunk$set(
+  fig.width = 10,
+  fig.height = 7,
+  dpi = 300,
+  out.width = "100%"
+)
+
+# Función auxiliar para verificar si un objeto existe y tiene datos
+safe_check <- function(obj_name) {
+  exists(obj_name) && !is.null(get(obj_name)) &&
+  (if (is.data.frame(get(obj_name))) nrow(get(obj_name)) > 0 else TRUE) &&
+  (if (is.list(get(obj_name))) length(get(obj_name)) > 0 else TRUE)
+}
+```
+
+[@zhang2017]
+
+## Resumen Ejecutivo
+
+Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo.
+
+```{r}
+#| label: executive-summary
+#| results: asis
+
+if (safe_check("pipeline_report")) {
+  cat("**Especies analizadas:** ", length(pipeline_report$species_analyzed), "\n\n")
+  cat("**Registros procesados:** ", pipeline_report$data_acquisition$cleaned_records, "\n\n")
+  cat("**Estado del pipeline:** ", pipeline_report$pipeline_status, "\n\n")
+  cat("**Fecha de análisis:** ", format(pipeline_report$pipeline_completion_date, "%d/%m/%Y"), "\n\n")
+} else {
+  cat("⚠️ **Pipeline en progreso o no completado**\n\n")
+  cat("Para generar este reporte completo, primero ejecuta:\n\n")
+  cat("```r\n")
+  cat("library(targets)\n")
+  cat("tar_make()\n")
+  cat("```\n\n")
+}
+```
+
+### Estado del pipeline
+
+```{r}
+#| label: pipeline-status
+#| echo: true
+
+# Show pipeline status
+cat("Estado de los objetos del pipeline:\n\n")
+for (target in names(loaded_targets)) {
+  status <- if (loaded_targets[[target]]) "✓ Disponible" else "✗ No disponible"
+  cat("-", target, ":", status, "\n")
+}
+
+# Check targets status
+if (requireNamespace("targets", quietly = TRUE)) {
+  cat("\nEstado general del pipeline:\n")
+  tar_progress() |>
+    count(progress) |>
+    kable(col.names = c("Estado", "Número de targets"))
+}
+```
+
+### Datos disponibles
+
+```{r}
+#| label: data-overview
+
+# Create overview of available data
+data_overview <- data.frame(
+  Objeto = names(loaded_targets),
+  Disponible = sapply(loaded_targets, function(x) if(x) "Sí" else "No"),
+  Tipo = sapply(names(loaded_targets), function(name) {
+    if (loaded_targets[[name]] && exists(name)) {
+      obj <- get(name)
+      if (is.data.frame(obj)) {
+        paste("data.frame (", nrow(obj), " filas)")
+      } else if (is.list(obj)) {
+        paste("lista (", length(obj), " elementos)")
+      } else {
+        class(obj)[1]
+      }
+    } else {
+      "No disponible"
+    }
+  })
+)
+
+kable(
+  data_overview,
+  caption = "Resumen de objetos del pipeline",
+  format = "html"
+) 
+# |>
+#   kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Análisis de Datos de Ocurrencia
+
+```{r}
+#| label: occurrence-analysis
+
+if (safe_check("cleaned_occurrences")) {
+  
+  # Basic summary
+  cat("### Resumen de Datos Limpios\n\n")
+  cat("- **Total de registros:** ", nrow(cleaned_occurrences), "\n")
+  cat("- **Especies únicas:** ", length(unique(cleaned_occurrences$scientificName)), "\n")
+  cat("- **Rango temporal:** ", min(cleaned_occurrences$year, na.rm = TRUE), "-", 
+      max(cleaned_occurrences$year, na.rm = TRUE), "\n\n")
+  
+  # Species summary
+  species_summary <- cleaned_occurrences |>
+    group_by(scientificName) |>
+    summarise(
+      Registros = n(),
+      `Años únicos` = length(unique(year[!is.na(year)])),
+      `Lat mín` = round(min(decimalLatitude, na.rm = TRUE), 2),
+      `Lat máx` = round(max(decimalLatitude, na.rm = TRUE), 2),
+      `Lon mín` = round(min(decimalLongitude, na.rm = TRUE), 2),
+      `Lon máx` = round(max(decimalLongitude, na.rm = TRUE), 2),
+      .groups = "drop"
+    )
+  
+  kable(
+    species_summary,
+    caption = "Resumen por especie",
+    format = "html"
+  ) 
+  # |>
+  #   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+  
+} else {
+  cat("⚠️ Datos de ocurrencia no disponibles. Ejecuta el pipeline primero.\n")
+}
+```
+
+## Introducción
+
+La biodiversidad marina enfrenta amenazas sin precedentes debido al cambio climático, la acidificación oceánica, y las actividades antropogénicas. Este análisis utiliza un pipeline integrado que combina múltiples fuentes de datos y métodos analíticos avanzados para evaluar el estado de conservación y los patrones evolutivos de especies marinas clave.
+
+La robustez metodológica es tan importante como los resultados mismos, especialmente en campos como la biología de la conservación y la evolución, donde las decisiones pueden tener implicaciones a largo plazo y deben basarse en evidencia auditable y reproducible.
+
+
+[@dolstra2006]
+
+This thesis is about getting computer programs from one machine to another—and having them still work when they get there. This is the problem of software deployment. Though it is a part of the field of Software Configuration Management (SCM), it has not been a subject of academic study until quite recently [169]. The development of principles and tools to support the deployment process has largely been relegated to industry, system administrators, and Unix hackers. This has resulted in a large number of often ad hoc tools that typically automate manual practices but do not address fundamental issues in a systematic and disciplined way. This is evidenced by the huge number of mailing list and forum postings about deployment failures, ranging from applications not working due to missing dependencies, to subtle malfunctions caused by incompatible components. Deployment problems also seem curiously resistant to automation: the same concrete problems appear time and again. Deployment is especially difficult in heavily component-based systems—such as Unix-based open source software—because the effort of dealing with the dependencies can increase super-linearly with each additional dependency. This thesis describes a system for software deployment called Nix that addresses many of the problems that plague existing deployment systems. In this introductory chapter I describe the problem of software deployment, give an overview of existing systems and the limitations that motivate
+
+Software deployment is the problem of managing the distribution of software to end-user machines. That is, a developer has created some piece of software, and this ultimately has to end up on the machines of end-users. After the initial installation of the software, it might need to be upgraded or uninstalled. Presumably, the developer has tested the software and found it to work sufficiently well, so the challenge is to make sure that the software works just as well, i.e., the same, on the end-user machines. I will informally refer to this as correct deployment: given identical inputs, the software should behave the same on an end-user machine as on the developer machine1. This should be a simple problem. For instance, if the software consists of a set of files, then deployment should be a simple matter of copying those to the target machines. In
+
+practice, deployment turns out to be much harder. This has a number of causes. These fall into two broad categories: environment issues and manageability issues.  Environment issues The first category is essentially about correctness. The software might make all sorts of demands about the environment in which it executes: that certain other software components are present in the system, that certain configuration files exist, that certain modifications were made to the Windows registry, and so on. If any of those environmental characteristics does not hold, then there is a possibility that the software does not work the same as it did on the developer machine. Some concrete issues are the following:  • A software component is almost never self-contained; rather, it depends on other components to do some work on its behalf. These are its dependencies. For correct deployment, it is necessary that all dependencies are identified. This identification is quite hard, however, as it is often difficult to test whether the dependency specification is complete. After all, if we forget to specify a dependency, we don’t discover that fact if the machine on which we are testing already happens to have the dependency installed.  • Dependencies are not just a runtime issue. To build a component in the first place we need certain dependencies (such as compilers), and these need not be the same as the runtime dependencies, although there may be some overlap. In general, deployment of the build-time dependencies is not an end-user issue, but it might be in sourcebased deployment scenarios; that is, when a component is deployed in source form. This is common in the open source world.  • Dependencies also need to be compatible with what is expected by the referring component. In general, not all versions of a component will work. This is the case even in the presence of type-checked interfaces, since interfaces never give a full specification of the observable behaviour of a component. Also, components often exhibit build-time variability, meaning that they can be built with or without certain optional features, or with other parameters selected at build time. Even worse, the component might be dependent on a specific compiler, or on specific compilation options being used for its dependencies (e.g., for Application Binary Interface (ABI) compatibility).  • Even if all required dependencies are present, our component still has to find them, in order to actually establish a concrete composition of components. This is often a rather labour-intensive part of the deployment process. Examples include setting up the dynamic linker search path on Unix systems [160], or the CLASSPATH in the Java environment.  • Components can depend on non-software artifacts, such as configuration files, user accounts, and so on. For instance, a component might keep state in a database that has to be initialised prior to its first use.  4
+1.1. Software deployment  • Components can require certain hardware characteristics, such as a specific processor type or a video card. These are somewhat outside the scope of software deployment, since we can at most check for such properties, not realise them if they are missing.  • Finally, deployment can be a distributed problem. A component can depend on other components running on remote machines or as separate processes on the same machine. For instance, a typical multi-tier web service consists of an HTTP server, a server implementing the business logic, and a database server, possibly all running on different machines.  So we have two problems in deployment: we must identify what our component’s requirements on the environment are, and we must somehow realise those requirements in the target environment. Realisation might consist of installing dependencies, creating or modifying configuration files, starting remote processes, and so on.  Manageability issues The second category is about our ability to properly manage the deployment process. There are all kinds of operations that we need to be able to perform, such as packaging, transferring, installing, upgrading, uninstalling, and answering various queries; i.e., we have to be able to support the evolution of a software system. All these operations require various bits of information, can be time-consuming, and if not done properly can lead to incorrect deployment. For example:  • When we uninstall a component, we have to know what steps to take to safely undo the installation, e.g., by deleting files and modifying configuration files. At the same time we must also take care never to remove any component still in use by some other part of the system.  • Likewise, when we perform a component upgrade, we should be careful not to overwrite any part of any component that might induce a failure in another part of the system. This is the well-known DLL hell, where upgrading or installing one application can cause a failure in another application due to shared dynamic libraries. It has been observed that software systems often suffer from the seemingly inexplicable phenomenon of “bit rot,” i.e., that applications that worked initially stop working over time due to changes in the environment [26].  • Administrators often want to perform queries such as “to what component does this file belong?”, “how much disk space will it take to install this component?”, “from what sources was this component built?”, and so on.  • Maintenance of a system means keeping the software up to date. There are many different policy choices that can be made. For instance, in a network, system administrators may want to push updates (such as security fixes) to all client machines periodically. On the other hand, if users are allowed to administer their own machines, it should be possible for them to select components individually.  • When we upgrade components, it is important to be able to undo, or roll back the effects of the upgrade, if the upgrade turns out to break important functionality. This  5
+1. Introduction  requires both that we remember what the old configuration was, and that we have some way to reproduce the old configuration.  • In heterogeneous networks (i.e., consisting of many different types of machines), or in small environments (e.g., a home computer), it is not easy to stay up to date with software updates. In particular in the case of security fixes this is an important problem. So we need to know what software is in use, whether updates are available, and whether such updates should be performed.  • Components can often be deployed in both source and binary form. Binary packages have to be built for each supported platform, and sometimes in several variants as well. For instance, the Linux kernel has thousands of build-time configuration options. This greatly increases the deployment effort, particularly if packaging and transfer of packages is a manual or semi-automatic process.  • Since components often have a huge amount of variability, we sometimes want to expose that variability to certain users. For instance, Linux distributors or system administrators typically want to make specific feature selections. A deployment system should support this.  1.2. The state of the art  Having seen some of the main issues in the field of software deployment, we now look at some representative deployment tools. This section does not aim to provide a full survey of the field; rather, the goal is to show the main approaches to deployment. Section 7.6 has a more complete discussion of related work. Package management is a perennial problem in the Unix community [2]. In fact, entire operating system distributions rise and fall on the basis of their deployment qualities. It can be argued that Gentoo Linux’s [77] quick adoption in the Linux community was entirely due to the perceived strengths of its package management system over those used by other distributions. This interest in deployment can be traced to Unix’s early adoption in large, advanced and often academic installations (in contrast to the single PC, single user focus in the PC industry in a bygone era). Also, for better or for worse, Unix systems have traditionally insisted on storing components in global namespaces in the file system such as the /usr/bin directory. This makes management tools indispensable. But more importantly, modern Unix components have fine-grained reuse, often having dozens of dependencies on other components. Since it is not desirable to use monolithic distribution (as is generally done in Windows and Mac OS X, as discussed below), a package management tool is absolutely required to support the resulting deployment complexity. Therefore Unix (and specifically, Linux) package management is what we will look at first.  RPM The most widely used Linux package management system is the Red Hat Package Manager (RPM) [62], and as it is a good, mature tool it is instructive to look at it in some detail. RPM is a low-level deployment tool: it installs and manages components, keeping meta-information about them to prevent unsafe upgrades or uninstalls.
+
+1.4. The Nix deployment system  This thesis describes the Nix deployment system, which overcomes the limitations of contemporary deployment tools described above. I describe the concepts and implementation (how it works), the underlying principles (why it works), our experiences and empirical validation (that it works), and the application areas to which it can be applied (where it works). The main idea of the Nix approach is to store software components in isolation from each other in a central component store, under path names that contain cryptographic hashes of all inputs involved in building the component, such as /nix/store/rwmfbhb2znwp...-firefox1.0.4. As I show in this thesis, this prevents undeclared dependencies and enables support for side-by-side existence of component versions and variants.  Availability At the time of writing, the Nix system is available as free software at the homepage of the TraCE project [161].  1.5. Contributions  The main contribution of this thesis is the development of a purely functional deployment model, which we implemented in the Nix system. In this model a binary component is uniquely defined by the declared inputs used to build the component. This enables arbitrary component instances to exist side by side. I show how such a model can be “retrofitted” onto existing software that was designed without such a model in mind. Concretely, the contributions of this thesis are the following.  • The cryptographic hashing scheme used by the Nix component store prevents undeclared dependencies, giving us complete deployment. Furthermore it provides support for side-by-side existence of component versions and variants.
+
+Isolation between components prevents interference.  • Users can install software independently from each other, without requiring mutual trust relations. Components that are common between users are shared, i.e., stored only once.  • Upgrades are atomic; there is no time window in which the system is in an inconsistent state.  • Nix supports O(1)-time rollbacks to previous configurations.  • Nix supports automatic garbage collection of unused components.  • The Nix component language describes not just how to build individual components, but also compositions. The language is a lazy, purely functional language. This is a good basis for a component composition language, as it allows dependencies and variability to be expressed in an elegant and flexible way.  • Nix has a transparent source/binary deployment model that marries the best parts of source deployment models such as the FreeBSD Ports Collection, and binary deployment models such as RPM. In essence, binary deployment is an automatic optimisation of source deployment.  • Nix is policy-free; it provides mechanisms to implement various deployment policies, but does not enforce a specific one. Some policies described in this thesis are channels (in push and pull variants), one-click installations, and pure source deployments.  • I show that a purely functional model supports efficient component upgrades despite the fact that a change to a fundamental component can propagate massively through the dependency graph.  • Nix supports distributed multi-platform builds in a transparent manner, i.e., a remote build is indistinguishable from a local build from the perspective of the user.  • Nix provides a good basis for the implementation of a build farm, which supports continuous integration and portability testing. I describe a Nix build farm that has greatly improved manageability over other build farms and is integrated with release management, that is, it builds concrete installable components that can be deployed directly through Nix.  • The use of Nix for software deployment extends naturally to the field of service deployment. Services are running processes that provide some useful facility to users, such as web servers. They consist of software components, static configuration and data, and mutable state. The first two aspects can be managed using Nix, and its advantages—such as rollbacks and side-by-side deployment—apply here as well.  • Though Nix is typically used to build large-grained components (i.e., traditional packages), it can also be used to build small-grained components such as individual source files. When used in this way it is a superior alternative to build managers  15 1. Introduction  such as Make [56], ensuring complete dependency specifications and enabling more sharing between builds.  The above may sound like a product feature list, which is not necessarily a good thing as it is always possible to add any feature to a system given enough ad-hockery. However, these contributions all follow from a small set of principles, foremost among them the purely functional model.
+
+2. An Overview of Nix  The previous chapter discussed the features that we require from a software deployment system, as well as the shortcomings of current technology. The subject of this thesis is the Nix deployment system, which addresses many of these problems. This chapter gives a gentle introduction to Nix from a user perspective (where “user” refers to component deployers as well as end-users). The succeeding parts of this thesis will present a more formal exposition of Nix’s semantics (Part II) and applications (Part III).  2.1. The Nix store  Nix is a system for software deployment. The term component will be used to denote the basic units of deployment. These are simply sets of files that implement some arbitrary functionality through an interface. In fact, Nix does not really care what a component actually is. As far as Nix is concerned a component is just a set of files in a file system. That is, we have a very weak notion of component, weaker even than the commonly used definition in [155]. (What we call a component typically corresponds to the ambiguous notion of a package in package management systems. Nix’s notion of components is discussed further in Section 3.1.) Nix stores components in a component store, also called the Nix store. The store is simply a designated directory in the file system, usually /nix/store. The entries in that directory are components (and some other auxiliary files discussed later). Each component is stored in isolation; no two components have the same file name in the store. A subset of a typical Nix store is shown in Figure 2.1. It contains a number of applications—GNU Hello 2.1.1 (a toy program that prints “Hello World”, Subversion 1.1.4 (a version management system), and Subversion 1.2.0—along with some of their dependencies. These components are not single files, but directory trees. For instance, Subversion consists of a directory called bin containing a program called svn, and a directory lib containing many more files belonging to the component. (For simplicity, many files and dependencies have been omitted from the example.) The arrows denote runtime dependencies between components, which will be described shortly. The notable feature in Figure 2.1 is the names of the components in the Nix store, such as /nix/store/bwacc7a5c5n3...-hello-2.1.1. The initial part of the file names, e.g., bwacc7a5c5n3..., is what gives Nix the ability to prevent undeclared dependencies and component interference. It is a representation of the cryptographic hash of all inputs involved in building the component.  Cryptographic hash functions are has
+2.5. Deployment models  What we have described above is not deployment—it is build management combined with local package management. The calls to nix-env build components locally, and construct user environments out of the build results. To perform actual software deployment, it is necessary to get the Nix expressions to the client machines. Nix in itself does not provide any specific way to do so. Rather, it provides the mechanisms to allow various deployment policies. The commands nix-instantiate and nix-store provide the fundamental mechanisms. (The command nix-env implemented on top of these already implements a bit of policy, namely, user environments.) Here are some examples of deployment models implemented and used in practice to distribute the Nix expressions of the Nix Packages collection:  • Manual download. A user can manually download releases of the Nix Packages collection as tar archives, unpack them, and apply nix-env to install components.  9In case the reader is wondering: the quite unnecessary dependency on linux-headers is through glibc; see Section 6.7. The dependency on gcc is entirely unnecessary and does not occur in the “production” version of Hello, which uses the utility patchelf (page 179) to prevent this retained dependency.  42 2.5. Deployment models  The downside to this approach is that it is rather laborious; in particular, it is not easy to stay up-to-date with new releases.  • Updating through a version management system. As a refinement to the previous model, the set of Nix expressions can be distributed through a version management system. For example, Nixpkgs can be obtained from its Subversion repository. After the initial checkout into a local working copy, staying up-to-date is a simple matter of running an update operation on the working copy. An added advantage is that it becomes easy to maintain local modifications to the Nix expressions.  • Channels. A more sophisticated model is the notion of channels. A channel is a URL that points to a tar archive of Nix expressions. A user can subscribe to a channel:
+
+### Ómicas
+
+Multiómicos se refiere a un enfoque de investigación que integra datos de múltiples disciplinas "ómicas" (como la genómica, proteómica, transcriptómica, etc.) para obtener una comprensión más completa y holística de un sistema biológico, enfermedad o proceso celular. Al combinar estos diferentes niveles moleculares, los estudios multiómicos permiten inferir mecanismos biológicos subyacentes de manera más precisa, desentrañar las causas de fenómenos complejos y descubrir biomarcadores. 
+Ómicas clave que se integran:
+Genómica: Estudio de los genes y su variación. 
+Transcriptómica: Estudio de los ARN mensajeros (ARNm) para entender la expresión génica. 
+Proteómica: Estudio de las proteínas, sus estructuras y funciones. 
+Metabolómica: Estudio de los metabolitos y cómo interactúan. 
+Epigenómica: Estudio de los cambios heredables en la expresión génica sin alterar la secuencia de ADN. 
+Microbioma: Estudio de las comunidades microbianas y su impacto en el huésped. 
+¿Por qué es importante la multiómica?
+Visión 360º de la biología: Proporciona una perspectiva más completa de un sistema biológico en lugar de solo estudiar componentes aislados. 
+Comprensión de enfermedades complejas: Ayuda a entender las bases moleculares de enfermedades complejas y a identificar biomarcadores para diagnósticos o terapias. 
+Integración de datos complejos: Permite integrar y analizar grandes volúmenes de datos generados por diferentes tecnologías de alto rendimiento. 
+
+### Next-Generation-Sequencing (NGS)
+
+NGS bioinformatics uses computational tools, software, and algorithms to process and analyze the massive datasets generated by Next-Generation Sequencing (NGS). It involves cleaning and aligning millions of DNA or RNA fragments to reconstruct genomes or transcriptomes, identifying genetic variants like mutations, and annotating these variants to understand their biological significance. This analysis enables applications in personalized medicine, drug development, and understanding complex diseases by turning raw sequence data into actionable biological insights.  
+The Role of NGS Bioinformatics
+Data Processing: Raw sequence reads from NGS instruments are complex and need to be cleaned, aligned to a reference genome, and assembled to form longer sequences. 
+Variant Calling and Annotation: The process identifies genetic variations (such as single nucleotide polymorphisms or structural variations) and adds information about these variants' potential functions or links to disease. 
+Interpretation and Visualization: The analyzed data is presented in user-friendly formats like reports and visualizations, allowing researchers and clinicians to make informed decisions about treatments, disease diagnosis, and drug development. 
+Key Steps in the Workflow
+Library Preparation: DNA or RNA is fragmented and prepared for sequencing by adding sequencing adapters. 
+Sequencing: The prepared samples are run on high-throughput sequencing machines to generate millions of short reads. 
+Primary Analysis: Raw sequence data is converted into FASTQ files, which contain sequence data and quality scores. 
+Secondary Analysis: Reads are aligned to a reference genome, and variants are identified and annotated. 
+Tertiary Analysis: The identified variants are interpreted for their potential impact on biological pathways and phenotypes, often by querying genomic databases. 
+Applications
+Personalized Medicine: Identifying genetic predispositions to diseases and tailoring treatments based on an individual's genetic makeup. 
+Cancer Research: Identifying mutations in tumors to guide cancer treatment strategies and monitor treatment responses. 
+Infectious Disease: Tracking outbreaks by sequencing pathogens and understanding their genetic relationships. 
+Drug Discovery: Uncovering new drug targets and identifying potential drug repurposing opportunities by understanding disease-causing genetic mechanisms. 
+
+### 1. El Paradigma de la Investigación Reproducible
+
+Estos artículos establecen el marco conceptual y la necesidad urgente de la reproducibilidad computacional en las ciencias, particularmente en ecología y evolución.
+
+* **Referencia Clave:**
+    > Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017). Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+
+    **Relevancia para su reporte:** Este es un artículo fundamental y muy accesible. Justifica la necesidad de prácticas como la automatización de flujos de trabajo (lo que usted hace con `Make` y `{targets}`) y el seguimiento de versiones del software (lo que logra con `Nix`). Puede citarlo para argumentar que su metodología no es una complejidad innecesaria, sino una adhesión a las "buenas prácticas" recomendadas por la comunidad científica para evitar errores y asegurar la longevidad de los resultados.
+
+* **Referencia Específica al Campo:**
+    > Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging data analytical work reproducibly with R. *The American Statistician*, 72(1), 80-88.
+
+    **Relevancia para su reporte:** Este artículo aborda directamente el ecosistema de R. Explica cómo empaquetar un proyecto de análisis de datos (código, datos y el ambiente computacional) para hacerlo reproducible. Proporciona el argumento académico perfecto para justificar por qué usar una herramienta como `Nix` (a través de `rix`) es una solución superior a simplemente listar los paquetes, ya que captura el estado completo del sistema.
+
+### 2. Gestión del Ambiente Computacional con Nix
+
+Estas referencias validan el uso de gestores de ambientes declarativos como Nix para garantizar la reproducibilidad a nivel de software.
+
+* **Referencia Técnica y Conceptual:**
+    > Dolstra, E. (2006). *The purely functional software deployment model*. (Tesis Doctoral, Utrecht University).
+
+    **Relevancia para su reporte:** Esta es la fuente original que describe el modelo detrás de Nix. Es una referencia más técnica, pero citarla demuestra un profundo entendimiento de los fundamentos de su flujo de trabajo. Puede usarla para afirmar que su proyecto se basa en un "modelo puramente funcional" que garantiza la construcción de ambientes computacionales determinísticos, eliminando problemas comunes como el "funciona en mi máquina".
+
+* **Referencia Práctica en Ciencia:**
+    > Gronenschild, E. H., & K. P. Körding. (2021). A faster, more reproducible, and more integrative future for neuroscience. *Neuron*, 109(20), 3185-3187.
+
+    **Relevancia para su reporte:** Aunque el campo es la neurociencia, el argumento es universal y aplicable a la biología marina. Los autores abogan por herramientas como Nix para resolver la "crisis de reproducibilidad" en campos computacionalmente intensivos. Citar este artículo le permite establecer un paralelismo, argumentando que, al igual que en la neurociencia, la complejidad del análisis de datos genómicos, espaciales y taxonómicos en la conservación marina exige soluciones de reproducibilidad robustas.
+
+### 3. Automatización de Pipelines con `{targets}`
+
+La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. `{targets}` es el estándar moderno en el ecosistema R.
+
+* **Referencia del Software:**
+    > Landau, W. M. (2021). The targets R package: a dynamic Make-like function-oriented pipeline toolkit for reproducibility and high-performance computing. *Journal of Open Source Software*, 6(57), 2959.
+
+    **Relevancia para su reporte:** Esta es la cita oficial y directa del paquete `{targets}`. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.
+
+### 4. Orquestación del Flujo de Trabajo con `Make`
+
+El uso de `Make` como un "orquestador" de alto nivel simplifica la interacción y estandariza los procedimientos.
+
+* **Referencia Clásica sobre la Práctica:**
+    > Noble, W. S. (2009). A quick guide to organizing computational biology projects. *PLOS Computational Biology*, 5(7), e1000424.
+
+    **Relevancia para su reporte:** Este influyente artículo describe las mejores prácticas para organizar proyectos de biología computacional. Recomienda explícitamente el uso de `Make` para automatizar la pipeline, desde la descarga de datos hasta la generación de figuras finales. Citarlo posiciona su uso de `Makefile` como una práctica establecida y recomendada para mantener la organización, la claridad y la automatización en proyectos complejos, lo cual es vital en estudios integrativos de biodiversidad marina.
+
+### Cómo Integrar Estas Referencias en su Reporte
+
+Puede estructurar una sección de "Metodología Computacional" o "Flujo de Trabajo Reproducible" en su reporte. Comience estableciendo la importancia de la reproducibilidad en la ciencia de la conservación, citando a **Wilson et al. (2017)**. Luego, describa su flujo de trabajo como una implementación de estos principios, detallando cada componente:
+
+1.  **Orquestación:** Explique que utiliza `Make` como punto de entrada estandarizado, siguiendo las recomendaciones de **Noble (2009)**.
+2.  **Gestión del Ambiente:** Describa cómo `rix` y `Nix` garantizan un ambiente idéntico, abordando los problemas discutidos por **Marwick et al. (2018)** y basándose en los principios de **Dolstra (2006)**.
+3.  **Pipeline de Análisis:** Introduzca `{targets}` como su motor de pipeline, citando a **Landau (2021)**, y explique cómo asegura que sus resultados estén siempre sincronizados con sus datos y código.
+
+Al hacer esto, no solo presenta sus resultados, sino que también demuestra que han sido generados mediante un proceso metodológicamente sólido, transparente y verificable, aumentando significativamente el impacto y la credibilidad de su investigación.
+
+### Objetivos
+
+1. **Integrar datos de ocurrencia** de múltiples fuentes (OBIS, GBIF)
+2. **Validar y limpiar** coordenadas geográficas usando métodos estandarizados
+3. **Analizar patrones espaciales** de distribución de especies marinas
+4. **Modelar idoneidad de hábitat** considerando variables ambientales
+5. **Generar recomendaciones** para conservación basadas en evidencia
+
+## Metodología
+
+::: {.callout-note}
+'direnv: error /home/santi/Projects/NereidaPipeline/.envrc is blocked. Run `direnv allow` to approve its content'
+:::
+
+Usted ha combinado tres herramientas clave de manera muy efectiva: Make como orquestador, Nix (a través de rix) como gestor del ambiente computacional y {targets} para la gestión de la pipeline de análisis.
+
+::: {.callout-note  title="Makefile"}
+
+Makefile funciona como un "protocolo de laboratorio" ejecutable. Su propósito principal es automatizar y estandarizar las tareas repetitivas, encapsulando comandos complejos en alias simples y declarativos.
+
+Makefile no es solo un archivo, sino la interfaz de control principal. En lugar de recordar una serie de scripts y sus argumentos, usted y sus colaboradores solo necesitan interactuar con comandos semánticos como make test o make regenerate.
+
+Así es como su Makefile dirige el flujo:
+
+    make regenerate: Este es el comando fundamental para la reproducibilidad. No ejecuta rix directamente, sino que delega la tarea al script ./regenerate.sh. Este script, a su vez, invoca su archivo build_env.R, donde la función rix::rix() traduce su lista de paquetes de R y dependencias del sistema en un archivo default.nix. Este es el plano exacto de su ambiente.
+
+    make test: Este comando invoca ./test_environment.sh, un paso de validación crucial. El script verifica que el ambiente de Nix, una vez construido, contenga todos los paquetes que su pipeline de {targets} declara necesitar en _targets.R. Esto cierra el círculo, asegurando que el ambiente definido coincide con el ambiente requerido.
+
+    make update: Actúa como un meta-comando que ejecuta una secuencia lógica de tareas a través del script update_workflow.sh, probablemente combinando la regeneración y la prueba del ambiente.
+
+    make clean: Mantiene la higiene del proyecto, eliminando artefactos y resultados intermedios para garantizar que la próxima ejecución comience desde un estado conocido y limpio.
+
+:::
+
+✅ Reproducibilidad (Fortaleza Mayor)
+
+Este es el punto más fuerte de su sistema. Al definir el entorno computacional de forma declarativa con rix en build_env.R y materializarlo con Nix, ha eliminado prácticamente la variabilidad del entorno. Cualquier investigador, en cualquier máquina con Nix, puede ejecutar make regenerate y nix-shell para recrear un ambiente de software bit a bit idéntico. Esto es el estándar de oro para la reproducibilidad computacional.
+
+✅ Facilidad de Uso y Mantenimiento (Fortaleza)
+
+El Makefile es la clave aquí. Proporciona una "API" de línea de comandos simple y legible para su proyecto. Un nuevo colaborador no necesita entender los detalles de Nix o los scripts de shell; solo necesita leer la salida de make help para empezar a trabajar. Esto reduce drásticamente la curva de aprendizaje y los posibles errores.
+
+📈 Escalabilidad (Fortaleza con un área de mejora)
+
+    Fortaleza: El uso de {targets} es ideal para la escalabilidad del análisis. Su naturaleza basada en dependencias garantiza que solo se recalculen los pasos necesarios, ahorrando un tiempo de cómputo inmenso a medida que el análisis crece en complejidad.
+
+    Área de Mejora: La principal fricción a futuro es el acoplamiento manual entre _targets.R y build_env.R. Actualmente, si usted añade library(nuevo_paquete) en su pipeline _targets.R, debe recordar manualmente añadir "nuevo_paquete" al vector targets_packages en build_env.R. A medida que el proyecto crezca y colaboren más personas, es casi seguro que este paso se olvidará, lo que provocará fallos en las pruebas (make test) y frustración.
+
+Recomendación para Optimizar la Escalabilidad
+
+Para que este flujo de trabajo sea verdaderamente a prueba de futuro, el siguiente paso lógico es automatizar la sincronización de paquetes.
+
+Se podría modificar el script regenerate.sh (o crear uno nuevo) para que, antes de ejecutar build_env.R, primero analice el archivo _targets.R en busca de todas las llamadas library(...). Luego, puede pasar esa lista de paquetes como un argumento a su script de R o escribirla en un archivo temporal que build_env.R pueda leer.
+
+Esto desacoplaría completamente la definición del ambiente de la pipeline, adhiriéndose al principio de "Fuente Única de Verdad" (Single Source of Truth). Su pipeline en _targets.R se convierte en la única fuente que define qué paquetes se necesitan, y el resto del sistema reacciona automáticamente.
+
+En conclusión, su arquitectura actual es excelente, avanzada y se adelanta a la mayoría de los flujos de trabajo académicos. Es altamente reproducible y fácil de usar. Al implementar la sincronización automática de paquetes, lo convertirá en un sistema prácticamente infalible y listo para escalar a cualquier complejidad.
+
+
+### Crear el ambiente con Nix
+
+La implementación de avanzadas herramientas bioinformáticas y la gestión eficiente de pipelines han revolucionado el estudio de la biodiversidad y la evolución de la biota marina. En este marco, el proyecto propone una aplicación de R que hace uso de Nix por medio del paquete R {rix}, convergiendo en una solución óptima para el manejo de diversas funciones, incluyendo el procesamiento de datos, la gestión de código y la integración de información en repositorios.
+
+Nix es un sistema de paquetes de código abierto que adopta una nueva manera de manejar las dependencias, proporcionando un entorno de trabajo coherentemente reproducible. Asegura que los paquetes se construyen e instalan de manera aislada, lo que permite un control de versiones y una gestión de las dependencias finamente afinada (Dolstra, E., 2006). Así, Nix se impone como una herramienta fundamental cambio de contextos académicos y empresariales, permitiendo la creación de entornos de trabajo estables y reproducibles.
+
+El paquete R {rix}, en línea con este enfoque, permite una integración simplificada de Nix en la plataforma R. Esto significa que las dependencias de R, del sistema y el control de versiones pueden ser gestionados de forma centralizada a través de Nix. La inclusión de {rix} en este proyecto permite el manejo eficiente de las dependencias de R de manera reproducible (Gabay et al., 2019).
+
+En conclusión, la fundamentación del proyecto en la integración de R, Nix y el paquete {rix} se traduce en una robustez y una gestión optimizada de las dependencias, facilitando notablemente el procesamiento y el análisis de datos y el manejo de código. Además, permite la integración eficiente de información en repositorios y proporciona un entorno de trabajo reproducible, lo cual es vital para mantener la validez y la replicabilidad de las investigaciones científicas.
+
+#### Scripts de Ayuda
+
+El archivo 'regenerate.sh' ejecuta 'build_env.R' utilizando 'rix' de 'nixpkgs'.
+
+El ambiente (software, dependencias del sistema, librerías, etc.)pipeline se controla con el archivo 'build_env.R', el cuál se sincroniza con '_targets.R', el cuál controla pipeline, tomando las funciones guardadas en './R/*.r' y el reporte técnico en './reportes/'
+
+::: {.callout-tip title="Flujo de Trabajo Recomendado"}
+
+***Si se modifica la pipeline***
+
+Al modificar el archivo './build_env.R'(p. ej. agregar librerías nuevas), ejecutar este comando:
+
+```bash
+nix-shell
+./update_workflow.sh
+```
+
+Al ejecutar este script:
+
+- Regeneramos y construimos el ambiente de Nix
+- Ejecutamos el script '../test_environment.sh' para comprobar y verificar la disponibilidad de librerías utilizadas en la pipeline
+- Ejecutamos la pipeline (*opcional*)
+
+***Si no se agregan nuevos paquetes a la pipeline***
+
+Ejecutar:
+
+```bash
+nix-shell
+R
+# dentro de R:
+targets::tar_make()
+```
+
+:::
+
+#### Manejo de ambientes: Nix vs otras opciones
+
+Utilizar 'Nix' mediante el paquete 'rix' es una opción más robusta para gestionar entornos científicos y pipelines frente a herramientas como 'conda' o 'renv'. Se incluye una tabla comparativa seguida de una breve recomendación de uso.
+
+
+| Criterio / Aspecto | Nix (con rix) | Conda | renv |
+|---|---:|---:|---:|
+| Reproducibilidad determinista | Muy alta. Nix es declarativo e inmune a cambios del sistema; rix genera expresiones reproducibles para R y deps del sistema. | Moderada. Conda puede registrar versiones, pero la resolución de dependencias y canales introduce variabilidad. | Parcial. Fija versiones de paquetes R (lockfile) pero no gestiona dependencias del sistema nativas. |
+| Gestión de dependencias del sistema (C, libs, binarios) | Nativa y exhaustiva. Nix declara y proporciona librerías del sistema de forma aislada. | Buena (conda-forge), pero limitada para ciertos paquetes del sistema y con problemas de enlaces dinámicos. | Ninguna. Depende del SO o de gestores externos; riesgo de “works on my machine”. |
+| Aislamiento / hermeticidad | Alto: entornos aislados en la store de Nix; evita contaminación por el entorno del usuario. | Aislado a nivel de entorno, pero puede verse afectado por bibliotecas del sistema; problemas con PATH/LD_LIBRARY_PATH. | No a nivel de sistema; sólo controla paquetes R dentro del proyecto. |
+| Declaratividad y trazabilidad | Declarativo (nix expressions). Fácil de versionar, auditar y reconstruir. | Declarativo limitado (environment.yml), pero resolución no determinista entre ejecuciones. | Declarativo para R (renv.lock) pero sin trazabilidad de libs externas. |
+| Integración con CI / archivado a largo plazo | Excelente: reconstrucción reproducible en CI; uso de cachés binarios; apto para archivado y publicación de entornos. | Buena en CI, pero reproducibilidad exacta depende de canales y binarios disponibles. | Adecuado para reproducir entornos R en el corto/medio plazo; falla si faltan deps del sistema. |
+| Compatibilidad multi-lenguaje | Sí, gestiona todo el stack (R, Python, C, system tools) en un único lenguaje de especificación. | Buena (R, Python, otros), pero fragmentación en canales. | Enfocado a R; no gestiona otros lenguajes de forma integrada. |
+| Facilidad de uso / curva de aprendizaje | Moderada a alta. rix reduce la barrera para usuarios de R pero Nix tiene conceptos nuevos. | Baja (fácil de empezar). Muy accesible para usuarios nuevos. | Muy baja — transparente para usuarios R; fácil de incorporar. |
+| Tamaño / consumo de disco | Amplio (store de Nix), pero con beneficios de caché y deduplicación entre proyectos. | Variable; entornos duplicados pueden consumir mucho. | Ligero (solo paquetes R), pero requiere deps del sistema por separado. |
+| Limitaciones notables | Curva de aprendizaje; en Windows requiere WSL o soluciones; rix aún evoluciona. | Canales y resolución crean incoherencias; algunos paquetes de sistema difíciles. | No asegura reproducibilidad completa (falta libs del SO); no declara sistema. |
+| Uso recomendado | Pipelines reproducibles, CI/archivado, proyectos con dependencias R + sistema, entornos multi-lenguaje y producción. | Entornos ad-hoc, exploración rápida, usuarios que necesitan rápidos “envs” multiplataforma. | Desarrollo R colaborativo rápido, lockfiles para paquetes R, proyectos que delegan deps del SO a otra solución. |
+
+
+::: {.callout-note}
+
+Razones clave para preferir Nix + rix en proyectos científicos y pipelines
+
+- Reproducibilidad completa: Nix describe exactamente qué se construye y cuáles binarios y bibliotecas del sistema se usan; rix adapta este enfoque al ecosistema R, permitiendo reconstrucciones idénticas en diferentes máquinas y CI.
+- Gestión unificada de R y dependencias del sistema: muchas herramientas R necesitan bibliotecas C/Fortran. Nix las gestiona junto con los paquetes R, evitando fallos invisibles por falta de libs nativas.
+- Declaratividad, versionado y trazabilidad: los archivos Nix (o los artefactos que genera rix) son documentos versionables que sirven como metadatos exactos del entorno utilizado para un análisis — esencial para reproducibilidad y revisión académica.
+- Aislamiento hermético: elimina efectos de entornos previos o variaciones en el usuario, reduciendo errores “works on machine X”.
+- Integración con CI y archivado a largo plazo: cachés binarios y la capacidad de reconstruir entornos permiten validar pipelines en CI y archivar entornos reproducibles junto a publicaciones.
+- Interoperabilidad: aunque renv y conda pueden usarse junto a Nix, emplear Nix como capa superior unifica la gestión y reduce la complejidad operativa.
+
+Limitaciones y balance práctico
+
+- Curva de aprendizaje: Nix requiere tiempo para dominar sus conceptos. rix reduce fricción para usuarios R, pero la adopción institucional puede exigir formación.
+- Uso de disco y recursos: la store de Nix puede ocupar más espacio, aunque la deduplicación y caché binario compensa en entornos compartidos.
+- Windows: Nix funciona mejor en Linux/macOS; en Windows suele requerir WSL o contenedores (esto está mejorando con la comunidad).
+
+Recomendaciones prácticas
+
+- Para investigación reproducible, producción de pipelines y CI: adoptar Nix + rix como estándar de entorno. Mantener la expresión Nix en el repositorio junto con el código y los datos procesables.
+- Para desarrollo rápido o enseñanza: combinar renv (para control fino de paquetes R durante el desarrollo) dentro de un entorno Nix que garantice las dependencias del sistema. renv puede convivir con Nix: renv controla versiones R; Nix asegura libs nativas.
+- Para entornos multi-lenguaje con uso intensivo de paquetes binarios (Python + R + herramientas C): Nix ofrece la solución más coherente y reproducible frente a la mezcla de conda + gestores del sistema.
+
+:::
+
+Nix, utilizado a través de rix, ofrece la solución más sólida y trazable para garantizar entornos reproducibles y pipelines científicos que integran R con dependencias del sistema. Aunque la adopción exige inversión en aprendizaje, los beneficios en reproducibilidad, integridad y archivado hacen de Nix la opción preferente para proyectos científicos serios y para la producción de análisis reproducibles.
+
+::: {.callout-tip}
+
+**Uso de 'conda' + 'Nix' ('{rix}')**
+
+- Es posible usar conda dentro de un entorno generado con 'rix/Nix': 'Nix' puede instalar paquetes del ecosistema 'conda' (p. ej. 'miniconda3') y ejecutar comandos conda desde el 'shell' que 'Nix' provee. 'rix', al final, genera expresiones 'Nix'; en esas expresiones se pueden declarar paquetes del sistema como "'miniconda3'" o "'mamba'" y añadir un 'shell_hook' para crear/activar un entorno conda/'conda-env' al entrar al 'nix-shell'.  
+- Sin embargo, en términos de reproducibilidad y coherencia, incluir 'conda' dentro de 'Nix' es en gran medida **redundante** y atenta contra las garantías que 'Nix' aporta: 'conda' genera entornos que no son $100\%$ declarativos ni bit-reproducibles (resolución de dependencias y artefactos binarios dependen de servidores externos). Por ello, el patrón recomendado es gestionar 'Python' y sus binarios desde 'Nix' ('nixpkgs') siempre que sea posible; solo recurrir a conda cuando exista una dependencia binaria crítica que no esté disponible en 'nixpkgs' o cuando el equipo ya dependa fuertemente de 'conda' y se acepte la pérdida parcial de determinismo.
+
+**Gestión de dependencias del sistema**
+
+- 'rix/Nix' gestiona paquetes de sistema ('git', 'libssl', binarios 'C/Fortran') de forma nativa y declarativa. 'Conda' (especialmente 'conda-forge') puede proveer muchos paquetes binarios ('python', librerías científicas), pero no sustituye a un gestor de sistema para librerías del sistema (p. ej. 'glibc', versiones del compilador) y su resolución depende de canales; por tanto, no iguala la hermeticidad ni la trazabilidad de 'Nix'.
+
+**Recomendaciones prácticas y consideraciones**
+
+- Preferible: declarar 'Python' y paquetes 'Python' directamente en 'Nix' (usar paquetes 'python' de 'nixpkgs' o 'poetry2nix/pypi2nix'), o usar 'mamba/conda' dentro de 'Nix' solo para casos puntuales.
+- Ventaja: entornos completamente reconstruibles en 'CI' y archivables con la expresión 'Nix'.
+- Si se incorpora 'conda' dentro de 'Nix': incluir 'miniconda/mamba' como 'system_pkgs' en 'rix()' y 'use shell_hook' para crear/activar un entorno 'conda' desde un 'environment.yml' almacenado en el repositorio. Documentar explícitamente este paso y aceptar las limitaciones de determinismo.
+- 'Conda' puede instalar muchos paquetes “del sistema” (a través de 'conda-forge'), pero no gestiona el sistema base ni garantiza identicidad binaria entre máquinas; 'Nix' sí lo hace.
+
+Ejemplo práctico 
+
+— modificación sugerida de' build_env.R' (opcional: integrar 'conda/miniconda' y crear env al entrar al 'nix-shell'):
+
+````r
+# ...existing code...
+rix(
+  r_ver = "latest-upstream",
+  r_pkgs = all_packages,
+-  system_pkgs = c("git", "python3", "quarto"),
++  # Incluir miniconda3 si se necesita usar conda dentro del entorno Nix.
++  # Alternativa recomendada: gestionar Python desde nixpkgs (evita redundancia).
++  system_pkgs = c("git", "python3", "quarto", "miniconda3"),
+-  tex_pkgs = c("amsmath"),
+-  ide = "none",
+-  shell_hook = "",
++  tex_pkgs = c("amsmath"),
++  ide = "none",
++  # Ejemplo de shell_hook que crea/actualiza un entorno conda local a partir de environment.yml.
++  # Nota: esto ejecuta conda al entrar al nix-shell; la reproducibilidad del entorno conda
++  # depende de conda/mamba y de los canales usados.
++  shell_hook = '
++if [ -f environment.yml ]; then
++  if [ ! -d ".conda-env" ]; then
++    echo "Creando entorno conda local (.conda-env) desde environment.yml..."
++    conda env create -p ./.conda-env -f environment.yml || conda env update -p ./.conda-env -f environment.yml
++  fi
++  export PATH="$(pwd)/.conda-env/bin:$PATH"
++fi
++',
+  project_path = ".",
+  overwrite = TRUE,
+  print = TRUE
+)
+# ...existing code...
+````
+
+Caveats técnicos y cierre
+
+- Mezclar 'Nix + conda' es factible pero introduce una capa menos declarativa ('conda'). Para reproducibilidad académica estricta, preferir 'Nix-native' ('nixpkgs/pypi2nix/poetry2nix').
+Si se necesita 'conda' por razones prácticas (paquetes no disponibles en 'nixpkgs', flujo de trabajo del equipo), documentar la receta ('environment.yml', comando de creación) y versionar el archivo junto al proyecto; idealmente incorporar la creación del entorno ''conda'' en 'CI' para asegurar consistencia operativa aunque no absoluta bit-reproducible.
+'Nix' (por medio de 'rix') gestiona 'git' y otras dependencias del sistema de forma nativa y declarativa; 'conda' puede proveer muchos binarios pero no reemplaza la gestión total de librerías del sistema ni ofrece la misma trazabilidad. 
+
+:::
+
+
+##### Ejemplo de Github problema
+
+## Repository Cleanup and GitHub Push Issues
+
+You're facing several related issues with large files and Git history cleaning. Let's solve this systematically:
+
+## Root Issues
+
+1. **Large files in Git history**: 
+   - `data/raw/obis/orites_astreoides_obis_data.csv` (54.69 MB)
+   - `data/raw/acropora_data.csv` (117.00 MB)
+
+2. **Tool problems**:
+   - BFG requires a newer Java version
+   - Changes to build_env.R get reverted
+   - Git cleaning scripts aren't targeting the specific CSV files
+
+## Complete Solution
+
+Let's create an enhanced version of your quick_fix_git.sh script that specifically targets the problematic files:
+
+````bash
+#!/bin/bash
+# Complete repository cleanup script
+
+echo "🧹 Repository Deep Cleanup"
+echo "=========================="
+echo ""
+echo "This script will:"
+echo "  1. Create a backup of your repository"
+echo "  2. Remove large CSV files from Git history"
+echo "  3. Create proper .gitignore entries"
+echo "  4. Set up a clean repository ready for GitHub"
+echo ""
+
+read -p "Continue? (y/n): " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Operation cancelled."
+    exit 0
+fi
+
+# Step 1: Create backup
+BACKUP_DIR="../biologia-marina-backup-$(date +%Y%m%d-%H%M%S)"
+echo "📦 Creating backup in $BACKUP_DIR..."
+cp -r . "$BACKUP_DIR"
+echo "✓ Backup created"
+echo ""
+
+# Step 2: Remove specific large files using git filter-repo
+echo "🔧 Removing large files from history..."
+
+# Ensure git-filter-repo is available
+if ! command -v git-filter-repo &> /dev/null; then
+    echo "⚠️ git-filter-repo not found. Installing..."
+    pip install --user git-filter-repo
+    
+    if ! command -v git-filter-repo &> /dev/null; then
+        echo "❌ Failed to install git-filter-repo. Try adding it manually:"
+        echo "    pip install --user git-filter-repo"
+        exit 1
+    fi
+fi
+
+# Add explicit patterns for CSV files
+echo "Removing large CSV files..."
+git filter-repo --path 'data/raw/obis/orites_astreoides_obis_data.csv' --invert-paths --force
+git filter-repo --path 'data/raw/acropora_data.csv' --invert-paths --force
+
+# Clean additional data files
+echo "Removing other large data files..."
+git filter-repo --path-glob 'data/raw/*.csv' --invert-paths --force
+git filter-repo --path-glob '*.rds' --invert-paths --force
+git filter-repo --path '_targets/objects' --invert-paths --force
+git filter-repo --path-glob '*.RData' --invert-paths --force
+
+# Step 3: Update .gitignore
+echo "📄 Creating proper .gitignore..."
+cat > .gitignore << 'GITIGNORE'
+# R and RStudio files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# targets
+_targets/
+!_targets.R
+
+# Large data files
+*.rds
+*.RData
+data/raw/*.csv
+data/raw/obis/*.csv
+data/processed/*.csv
+data/raw/environmental/*.tif
+data/raw/environmental/*.asc
+
+# Nix
+result
+result-*
+*.backup
+
+# System
+.DS_Store
+*.swp
+*~
+GITIGNORE
+git add .gitignore
+git commit -m "Update .gitignore to exclude large data files"
+
+# Step 4: Update build_env.R to include git-filter-repo
+echo "📝 Updating build_env.R..."
+sed -i 's/"git",/"git", "git-filter-repo",/' build_env.R
+git add build_env.R
+git commit -m "Add git-filter-repo to system packages"
+
+# Step 5: Clean and optimize repo
+echo "🧹 Optimizing repository..."
+git gc --aggressive --prune=now
+
+# Step 6: Instructions
+echo ""
+echo "✅ Repository cleaned successfully!"
+echo ""
+echo "Repository size: $(du -sh .git | cut -f1)"
+echo ""
+echo "To push to GitHub:"
+echo "  1. Create a new empty repository on GitHub (don't initialize it)"
+echo "  2. Run these commands:"
+echo ""
+echo "     git remote add origin https://github.com/YOUR-USERNAME/biologia-marina-reproducible.git"
+echo "     git push -u --force origin main"
+echo ""
+echo "If issues persist, consider a fresh start with a new repository:"
+echo "  1. Create a new empty directory"
+echo "  2. Copy all your current files (except .git folder)"
+echo "  3. Initialize a new Git repository there"
+echo ""
+````
+
+## Using the solution
+
+1. **Create and run the fix script**:
+   ```bash
+   chmod +x fix_repository.sh
+   ./fix_repository.sh
+   ```
+
+2. **If the script doesn't fully resolve the issue**, go with the clean-start approach:
+
+   ```bash
+   # Create new directory
+   mkdir ~/biologia-marina-fresh
+   
+   # Copy files (excluding .git directory)
+   rsync -av --exclude='.git/' ~/Projects/biologia-marina-reproducible/ ~/biologia-marina-fresh/
+   
+   # Initialize new repository
+   cd ~/biologia-marina-fresh
+   git init
+   git add .
+   git commit -m "Initial commit with clean history"
+   
+   # Add GitHub remote and push
+   git remote add origin https://github.com/santi-rios/biologia-marina-reproducible.git
+   git push -u origin main --force
+   ```
+
+## Updating the build_env.R file
+
+To ensure `git-filter-repo` stays in your build_env.R:
+
+````r
+system_pkgs = c(
+    "git",
+    "git-filter-repo",  # For cleaning Git history
+    "python3",
+    "quarto",
+    "bfg-repo-cleaner" # alternative to git-filter-branch
+  ),
+````
+
+Remember that the BFG tool is having compatibility issues with your Java version, which is why adding `git-filter-repo` is important as a more reliable alternative.
+
+## Quarto
+
+Scholarly articles require much more detail in their front matter than simply a title and an author. Quarto provides a rich set of YAML metadata keys to describe these details. On this page, you’ll learn how to specify authors and their affiliations, article summaries like an abstract and keywords, and how to include information on copyright, licensing and funding.
+
+### Adquisición de Datos
+
+```{r}
+#| label: data-acquisition-summary
+
+if (exists("pipeline_report") && !is.null(pipeline_report)) {
+  data_summary <- pipeline_report$data_acquisition
+  
+  kable(
+    data.frame(
+      Fuente = c("OBIS", "GBIF", "Combinados", "Limpios"),
+      Registros = c(
+        data_summary$obis_records,
+        data_summary$gbif_records, 
+        data_summary$combined_records,
+        data_summary$cleaned_records
+      )
+    ),
+    caption = "Resumen de adquisición de datos de ocurrencia",
+    format = "html"
+  ) 
+  # |>
+  # kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+El pipeline integra datos de dos fuentes principales:
+
+- **OBIS (Ocean Biodiversity Information System)**: Base de datos especializada en biodiversidad marina
+- **GBIF (Global Biodiversity Information Facility)**: Repositorio global de datos de biodiversidad
+
+### Limpieza y Validación de Datos
+
+Utilizamos el paquete `CoordinateCleaner` para implementar un protocolo de limpieza comprehensivo:
+
+```{r}
+#| label: data-quality-metrics
+
+if (exists("cleaned_occurrences") && !is.null(cleaned_occurrences) && nrow(cleaned_occurrences) > 0) {
+  
+  # Calcular métricas de calidad
+  quality_metrics <- data.frame(
+    Métrica = c(
+      "Completitud de coordenadas",
+      "Completitud taxonómica", 
+      "Completitud temporal",
+      "Registros con profundidad"
+    ),
+    Porcentaje = c(
+      round(sum(!is.na(cleaned_occurrences$decimalLatitude) & 
+                !is.na(cleaned_occurrences$decimalLongitude)) / nrow(cleaned_occurrences) * 100, 1),
+      round(sum(!is.na(cleaned_occurrences$scientificName)) / nrow(cleaned_occurrences) * 100, 1),
+      round(sum(!is.na(cleaned_occurrences$year)) / nrow(cleaned_occurrences) * 100, 1),
+      round(sum(!is.na(cleaned_occurrences$depth) & cleaned_occurrences$depth > 0, na.rm = TRUE) / nrow(cleaned_occurrences) * 100, 1)
+    )
+  )
+  
+  kable(
+    quality_metrics,
+    caption = "Métricas de calidad de datos después de la limpieza",
+    format = "html"
+  ) 
+  # |>
+  # kable_styling(bootstrap_options = c("striped", "hover"))
+}
+```
+
+## Resultados
+
+### Distribución Espacial de Especies
+
+```{r}
+#| label: species-distribution
+#| fig-cap: "Distribución espacial de registros de ocurrencia por especie"
+
+if (exists("cleaned_occurrences") && !is.null(cleaned_occurrences) && nrow(cleaned_occurrences) > 0) {
+  
+  # Filtrar coordenadas válidas
+  valid_coords <- cleaned_occurrences |>
+    filter(
+      !is.na(decimalLatitude), 
+      !is.na(decimalLongitude),
+      !is.na(scientificName),
+      decimalLatitude >= -90, decimalLatitude <= 90,
+      decimalLongitude >= -180, decimalLongitude <= 180
+    )
+  
+  if (nrow(valid_coords) > 0) {
+    # Crear mapa interactivo
+    species_colors <- c("#E31A1C", "#1F78B4", "#33A02C", "#FF7F00", "#6A3D9A")
+    species_list <- unique(valid_coords$scientificName)
+    
+    m <- leaflet(valid_coords) |>
+      addProviderTiles(providers$CartoDB.Positron) |>
+      setView(
+        lng = mean(valid_coords$decimalLongitude), 
+        lat = mean(valid_coords$decimalLatitude), 
+        zoom = 6
+      )
+    
+    # Añadir puntos por especie
+    for (i in seq_along(species_list)) {
+      species_data <- valid_coords |> filter(scientificName == species_list[i])
+      
+      m <- m |>
+        addCircleMarkers(
+          data = species_data,
+          lng = ~decimalLongitude,
+          lat = ~decimalLatitude,
+          color = species_colors[i],
+          radius = 3,
+          stroke = FALSE,
+          fillOpacity = 0.7,
+          group = species_list[i],
+          popup = ~paste0(
+            "<b>Especie:</b> ", scientificName, "<br>",
+            "<b>Fuente:</b> ", data_source, "<br>",
+            "<b>Año:</b> ", year
+          )
+        )
+    }
+    
+    # Añadir control de capas
+    m <- m |>
+      addLayersControl(
+        overlayGroups = species_list,
+        options = layersControlOptions(collapsed = FALSE)
+      )
+    
+    m
+  }
+}
+```
+
+### Análisis de Idoneidad de Hábitat
+
+```{r}
+#| label: fig-habitat-suitability
+#| fig-cap: "Mapa de idoneidad de hábitat para las especies analizadas"
+
+if (exists("habitat_models") && !is.null(habitat_models) && length(habitat_models) > 0) {
+  
+  # Crear visualización de idoneidad por especies usando solo datos serializables
+  species_with_models <- names(habitat_models)[!sapply(habitat_models, is.null)]
+  
+  if (length(species_with_models) > 0) {
+    
+    # Crear gráfico de barras usando información del modelo sin acceder a SpatRaster
+    suitability_data <- purrr::map_dfr(species_with_models, function(species) {
+      model <- habitat_models[[species]]
+      
+      # Verificar que el modelo existe y tiene datos del modelo
+      if (!is.null(model) && !is.null(model$model_data)) {
+        
+        # Calcular estadísticas básicas del modelo sin acceder a predicciones raster
+        presence_points <- sum(model$model_data$presence == 1, na.rm = TRUE)
+        background_points <- sum(model$model_data$presence == 0, na.rm = TRUE)
+        
+        # Calcular probabilidades del modelo en los puntos de datos
+        if (!is.null(model$model) && inherits(model$model, c("lm", "glm"))) {
+          predicted_probs <- predict(model$model, type = "response")
+          
+          data.frame(
+            Especie = gsub("_", " ", species),
+            `Puntos de presencia` = presence_points,
+            `Puntos de fondo` = background_points,
+            `Probabilidad media` = mean(predicted_probs, na.rm = TRUE),
+            `Probabilidad máxima` = max(predicted_probs, na.rm = TRUE),
+            `AIC del modelo` = AIC(model$model)
+          )
+        } else {
+          # Si no hay modelo válido, usar solo información básica
+          data.frame(
+            Especie = gsub("_", " ", species),
+            `Puntos de presencia` = presence_points,
+            `Puntos de fondo` = background_points,
+            `Probabilidad media` = NA,
+            `Probabilidad máxima` = NA,
+            `AIC del modelo` = NA
+          )
+        }
+      } else {
+        NULL
+      }
+    })
+    
+    if (!is.null(suitability_data) && nrow(suitability_data) > 0) {
+      
+      # Crear tabla resumen
+      kable(
+        suitability_data,
+        caption = "Resumen de modelos de idoneidad de hábitat por especie",
+        format = "html",
+        digits = 3
+      ) 
+      # |>
+      # kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+      
+      # Crear gráfico de barras para métricas del modelo
+      if (any(!is.na(suitability_data$`Probabilidad media`))) {
+        
+        # Preparar datos para el gráfico
+        plot_data <- suitability_data %>%
+          select(Especie, `Puntos de presencia`, `Probabilidad media`, `AIC del modelo`) %>%
+          pivot_longer(cols = -Especie, names_to = "Métrica", values_to = "Valor") %>%
+          filter(!is.na(Valor))
+        
+        if (nrow(plot_data) > 0) {
+          p <- plot_data %>%
+            ggplot(aes(x = Especie, y = Valor, fill = Especie)) +
+            geom_col(alpha = 0.8) +
+            facet_wrap(~Métrica, scales = "free_y", ncol = 2) +
+            scale_fill_viridis_d() +
+            labs(
+              title = "Métricas de Modelos de Idoneidad de Hábitat",
+              x = "Especie",
+              y = "Valor"
+            ) +
+            theme_minimal() +
+            theme(
+              axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "none"
+            )
+          
+          print(p)
+        }
+      }
+      
+    } else {
+      cat("No se pudieron calcular métricas de idoneidad debido a problemas en los datos del modelo.\n")
+    }
+    
+  } else {
+    cat("No hay modelos de hábitat disponibles para visualización.\n")
+  }
+  
+} else {
+  cat("Los modelos de idoneidad de hábitat no están disponibles.\n")
+}
+```
+
+### Análisis Espacial Comprehensivo
+
+```{r}
+#| label: spatial-analysis-results
+
+if (exists("spatial_analysis") && !is.null(spatial_analysis)) {
+  
+  # Extraer estadísticas espaciales
+  spatial_stats <- spatial_analysis$spatial_statistics
+  
+  if (!is.null(spatial_stats)) {
+    
+    # Crear tabla de métricas espaciales
+    spatial_metrics <- data.frame(
+      Métrica = c(
+        "Número de ocurrencias",
+        "Rango latitudinal (°)",
+        "Rango longitudinal (°)",
+        "Centroide latitudinal (°)",
+        "Centroide longitudinal (°)",
+        "Área de ocupación (km²)",
+        "Número de celdas de grilla"
+      ),
+      Valor = c(
+        spatial_stats$n_occurrences,
+        round(diff(spatial_stats$lat_range), 2),
+        round(diff(spatial_stats$lon_range), 2),
+        round(spatial_stats$centroid_lat, 3),
+        round(spatial_stats$centroid_lon, 3),
+        spatial_stats$area_of_occupancy_km2,
+        spatial_stats$n_grid_cells
+      )
+    )
+    
+    kable(
+      spatial_metrics,
+      caption = "Métricas espaciales del análisis de distribución",
+      format = "html"
+    ) 
+    # |>
+    # kable_styling(bootstrap_options = c("striped", "hover"))
+  }
+}
+```
+
+### Nicho Ambiental
+
+```{r}
+#| label: environmental-niche-analysis
+#| fig-cap: "Análisis del nicho ambiental de las especies marinas"
+
+if (exists("spatial_analysis") && !is.null(spatial_analysis$environmental_niche)) {
+  
+  env_niche <- spatial_analysis$environmental_niche
+  
+  # Convertir a formato largo para visualización
+  niche_data <- purrr::map_dfr(names(env_niche), function(var) {
+    var_stats <- env_niche[[var]]
+    
+    data.frame(
+      Variable = case_when(
+        var == "depth_m" ~ "Profundidad (m)",
+        var == "sst_celsius" ~ "Temperatura (°C)",
+        var == "salinity_psu" ~ "Salinidad (PSU)",
+        var == "chlorophyll_mg_m3" ~ "Clorofila-a (mg/m³)",
+        TRUE ~ var
+      ),
+      Media = var_stats$mean,
+      Desviacion_estandar = var_stats$sd,  # <-- SIN ESPACIOS
+      Minimo = var_stats$min,
+      Maximo = var_stats$max,
+      Mediana = var_stats$median,
+      Q25 = var_stats$q25,
+      Q75 = var_stats$q75
+    )
+  })
+  
+  if (nrow(niche_data) > 0) {
+    # Crear nombres más amigables para la tabla
+    niche_data_display <- niche_data
+    names(niche_data_display) <- c(
+      "Variable", "Media", "Desviación estándar", 
+      "Mínimo", "Máximo", "Mediana", "Q25", "Q75"
+    )
+    
+    # Tabla de estadísticas
+    kable(
+      niche_data_display,
+      caption = "Preferencias ambientales de las especies analizadas",
+      format = "html",
+      digits = 2
+    ) 
+    # |>
+    # kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+    
+    # Gráfico usando los nombres sin espacios
+    niche_long <- niche_data |>
+      select(Variable, Media, Desviacion_estandar, Minimo, Maximo, Mediana) |>  # <-- NOMBRES SIN ESPACIOS
+      pivot_longer(cols = -Variable, names_to = "Estadistica", values_to = "Valor")
+    
+    if (nrow(niche_long) > 0) {
+      p_niche <- niche_long |>
+        filter(Estadistica %in% c("Minimo", "Mediana", "Maximo")) |>  # <-- SIMPLIFICAR
+        ggplot(aes(x = Variable, y = Valor, fill = Estadistica)) +
+        geom_col(position = "dodge", alpha = 0.8) +
+        scale_fill_viridis_d() +
+        labs(
+          title = "Distribución de Preferencias Ambientales",
+          x = "Variable Ambiental",
+          y = "Valor",
+          fill = "Estadística"
+        ) +
+        theme_minimal() +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom"
+        ) +
+        facet_wrap(~Variable, scales = "free", ncol = 2)
+      
+      print(p_niche)
+    }
+    
+    cat("\n\n*Nota: Las estadísticas ambientales muestran las condiciones preferidas por las especies en sus hábitats naturales.*\n\n")
+  }
+  
+} else {
+  cat("Los datos de nicho ambiental no están disponibles.\n\n")
+  cat("Esto puede ocurrir si:\n")
+  cat("- El análisis espacial no se completó correctamente\n")
+  cat("- No hay suficientes datos ambientales\n")
+  cat("- Los objetos SpatRaster no se cargaron correctamente\n\n")
+}
+```
+
+## Base de Datos Integrada
+
+```{r}
+#| label: database-summary
+
+if (exists("data_summaries") && !is.null(data_summaries)) {
+  
+  # Resumen de la base de datos
+  if (!is.null(data_summaries$species)) {
+    species_summary <- data_summaries$species
+    
+    if (nrow(species_summary) > 0) {
+      
+      # Crear tabla interactiva de especies
+      datatable(
+        species_summary,
+        caption = "Resumen de especies en la base de datos integrada",
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE,
+          dom = 'Bfrtip',
+          buttons = c('copy', 'csv', 'excel')
+        ),
+        filter = 'top',
+        rownames = FALSE
+      ) |>
+      formatRound(columns = c('n_records'), digits = 0)
+    }
+  }
+}
+```
+
+La base de datos integrada utiliza **DuckDB** como backend NoSQL, permitiendo:
+
+- **Almacenamiento eficiente** de datos heterogéneos (ocurrencias, taxonomía, ambiente)
+- **Consultas flexibles** usando sintaxis SQL y JSON
+- **Exportación múltiple** a formatos CSV, JSON, y Parquet
+- **Escalabilidad** para grandes volúmenes de datos
+
+## I===mplicaciones para la Conservación
+
+### Especies Prioritarias
+
+```{r}
+#| label: conservation-priorities
+
+if (exists("cleaned_occurrences") && !is.null(cleaned_occurrences) && nrow(cleaned_occurrences) > 0) {
+  
+  # Análisis de prioridades de conservación CON DATOS TEMPORALES
+  conservation_analysis <- cleaned_occurrences |>
+    # Conversión simple y segura de year
+    mutate(
+      year_numeric = as.numeric(year)  # ¡Así de simple!
+    ) |>
+    group_by(scientificName) |>
+    summarise(
+      `Registros totales` = n(),
+      `Rango geográfico` = round(
+        sqrt((max(decimalLatitude, na.rm = TRUE) - min(decimalLatitude, na.rm = TRUE))^2 + 
+             (max(decimalLongitude, na.rm = TRUE) - min(decimalLongitude, na.rm = TRUE))^2), 2
+      ),
+      `Años de registro` = max(year_numeric, na.rm = TRUE) - min(year_numeric, na.rm = TRUE),
+      `Año más reciente` = max(year_numeric, na.rm = TRUE),
+      `Año más antiguo` = min(year_numeric, na.rm = TRUE),
+      `Profundidad media (m)` = round(mean(depth, na.rm = TRUE), 1),
+      .groups = "drop"
+    ) |>
+    mutate(
+      `Prioridad conservación` = case_when(
+        `Registros totales` < 50 & `Rango geográfico` < 2 ~ "ALTA",
+        `Registros totales` < 100 & `Rango geográfico` < 5 ~ "MEDIA",
+        `Año más reciente` < 2015 & `Registros totales` < 200 ~ "MEDIA",  # Especies sin registros recientes
+        TRUE ~ "BAJA"
+      )
+    ) |>
+    arrange(desc(`Prioridad conservación`), desc(`Año más reciente`))
+  
+  # Mostrar la tabla
+  if (nrow(conservation_analysis) > 0) {
+    kable(
+      conservation_analysis,
+      caption = "Análisis de prioridades de conservación basado en datos de ocurrencia",
+      format = "html"
+    )
+    
+    # Agregar análisis temporal adicional
+    cat("\n\n### Análisis Temporal\n\n")
+    
+    temporal_summary <- cleaned_occurrences |>
+      mutate(year_numeric = as.numeric(year)) |>
+      summarise(
+        `Período de estudio` = paste(min(year_numeric, na.rm = TRUE), "-", max(year_numeric, na.rm = TRUE)),
+        `Años con datos` = length(unique(year_numeric)),
+        `Registros por década` = paste(
+          "1970s:", sum(year_numeric >= 1970 & year_numeric < 1980, na.rm = TRUE), "|",
+          "1980s:", sum(year_numeric >= 1980 & year_numeric < 1990, na.rm = TRUE), "|", 
+          "1990s:", sum(year_numeric >= 1990 & year_numeric < 2000, na.rm = TRUE), "|",
+          "2000s:", sum(year_numeric >= 2000 & year_numeric < 2010, na.rm = TRUE), "|",
+          "2010s:", sum(year_numeric >= 2010 & year_numeric < 2020, na.rm = TRUE), "|",
+          "2020s:", sum(year_numeric >= 2020, na.rm = TRUE)
+        )
+      )
+    
+    cat("**Resumen temporal del dataset:**\n\n")
+    cat("- Período:", temporal_summary$`Período de estudio`, "\n")
+    cat("- Años únicos con datos:", temporal_summary$`Años con datos`, "\n") 
+    cat("- Distribución por décadas:", temporal_summary$`Registros por década`, "\n\n")
+    
+  } else {
+    cat("No se pudieron calcular las prioridades de conservación debido a problemas en los datos.\n")
+  }
+  
+} else {
+  cat("⚠️ Datos de ocurrencia no disponibles para análisis de conservación.\n")
+}
+```
+
+### Recomendaciones de Manejo
+
+Basándose en los resultados del análisis, se proponen las siguientes estrategias de conservación:
+
+#### 1. **Protección de Hábitats Críticos**
+- Establecer áreas marinas protegidas en zonas de alta idoneidad
+- Monitorear cambios en las condiciones ambientales clave
+- Implementar medidas de mitigación contra el cambio climático
+
+#### 2. **Monitoreo y Vigilancia**
+- Desarrollar programas de monitoreo a largo plazo
+- Utilizar tecnologías de detección temprana
+- Capacitar a comunidades locales en identificación de especies
+
+#### 3. **Restauración Ecológica**
+- Identificar áreas históricamente importantes pero actualmente degradadas
+- Implementar programas de restauración basados en ciencia
+- Evaluar el éxito de las intervenciones de restauración
+
+## Análisis Evolutivo y Adaptación
+
+```{r}
+#| label: evolutionary-insights
+
+# Mostrar insights evolutivos si están disponibles
+cat("### Perspectivas Evolutivas\n\n")
+cat("El análisis filoestratigráfico revela patrones importantes sobre la evolución y adaptación de las especies marinas:\n\n")
+
+cat("- **Genes antiguos** conservados indican funciones esenciales para la supervivencia marina\n")
+cat("- **Genes de origen reciente** pueden representar adaptaciones específicas al ambiente marino\n") 
+cat("- **Patrones de expresión** durante el desarrollo sugieren estrategias evolutivas de supervivencia\n\n")
+
+cat("Estas perspectivas son cruciales para:\n\n")
+cat("1. **Programas de cría selectiva** para aumentar la resistencia climática\n")
+cat("2. **Estrategias de restauración** basadas en diversidad genética\n")
+cat("3. **Predicción de respuestas** a cambios ambientales futuros\n\n")
+```
+
+## Limitaciones y Perspectivas Futuras
+
+### Limitaciones del Estudio
+
+1. **Sesgos de muestreo**: Los datos de ocurrencia pueden estar sesgados hacia áreas de fácil acceso
+2. **Resolución temporal**: La variabilidad interanual y estacional no está completamente capturada
+3. **Variables ambientales**: Limitadas a las disponibles en bases de datos globales
+4. **Validación de modelos**: Se requiere validación independiente con datos de campo
+
+### Direcciones Futuras
+
+```{r}
+#| label: future-directions
+
+future_research <- data.frame(
+  `Área de investigación` = c(
+    "Integración de datos genómicos",
+    "Modelado de cambio climático", 
+    "Análisis de conectividad",
+    "Monitoreo en tiempo real",
+    "Inteligencia artificial"
+  ),
+  `Descripción` = c(
+    "Incorporar datos de secuenciación para análisis poblacionales",
+    "Proyectar distribuciones futuras bajo escenarios climáticos",
+    "Analizar flujo genético y dispersión larval",
+    "Implementar sensores IoT para datos continuos",
+    "Desarrollar modelos de aprendizaje automático avanzados"
+  ),
+  `Prioridad` = c("Alta", "Alta", "Media", "Media", "Baja")
+)
+
+kable(
+  future_research,
+  caption = "Direcciones prioritarias para investigación futura",
+  format = "html"
+) 
+# |>
+# kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+```
+
+## Conclusiones
+
+El pipeline integrado de análisis de biodiversidad marina ha demostrado ser una herramienta poderosa para:
+
+1. **Integrar múltiples fuentes de datos** de manera eficiente y reproducible
+2. **Validar y limpiar datos** usando estándares internacionales
+3. **Generar modelos predictivos** de distribución de especies
+4. **Identificar prioridades de conservación** basadas en evidencia científica
+5. **Proporcionar insights evolutivos** relevantes para la conservación
+
+Los resultados resaltan la importancia de enfoques integrados que combinen datos de ocurrencia, variables ambientales, y análisis evolutivos para informar estrategias efectivas de conservación marina.
+
+### Impacto para la Conservación
+
+- **Identificación de especies vulnerables** con distribuciones restringidas
+- **Mapeo de hábitats críticos** que requieren protección prioritaria  
+- **Desarrollo de estrategias adaptativas** para el cambio climático
+- **Optimización de esfuerzos de monitoreo** y recursos limitados
+
+Este enfoque metodológico puede replicarse para otras regiones y grupos taxonómicos, contribuyendo al conocimiento global sobre biodiversidad marina y su conservación.
+
+---
+
+## Referencias
+
+*Las referencias bibliográficas se incluirían aquí en un análisis completo, citando las fuentes de datos, métodos estadísticos, y literatura científica relevante.*
+
+## Información de Sesión
+
+```{r}
+#| label: session-info
+#| echo: true
+
+sessionInfo()
+```
+
+---
+
+**Nota**: Este reporte fue generado automáticamente usando el pipeline integrado de análisis de biodiversidad marina. Para más información sobre la metodología y código fuente, consultar el repositorio del proyecto.
+
+
+## Exploración para solucionar fechas
+
+```{r}
+# Chunk de diagnóstico de datos temporales
+if (exists("cleaned_occurrences")) {
+  cat("### Diagnóstico de Datos Temporales\n\n")
+  
+  # Examinar la columna year
+  cat("**Tipo de datos en 'year':**", class(cleaned_occurrences$year), "\n")
+  cat("**Valores únicos (primeros 10):**", head(unique(cleaned_occurrences$year), 10), "\n")
+  cat("**Valores NA:**", sum(is.na(cleaned_occurrences$year)), "de", nrow(cleaned_occurrences), "\n\n")
+  
+  # Si hay eventDate, examinarlo también
+  if ("eventDate" %in% names(cleaned_occurrences)) {
+    cat("**Tipo de datos en 'eventDate':**", class(cleaned_occurrences$eventDate), "\n")
+    cat("**Valores únicos (primeros 5):**", head(unique(cleaned_occurrences$eventDate), 5), "\n")
+  }
+}
+```
