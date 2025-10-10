@@ -44,6 +44,7 @@ format:
     code-fold: true
     theme: cosmo
     css: styles.css
+    embed-resources: true
 execute: 
   echo: false
   warning: false
@@ -781,6 +782,51 @@ Remember that the BFG tool is having compatibility issues with your Java version
 ## Quarto
 
 Scholarly articles require much more detail in their front matter than simply a title and an author. Quarto provides a rich set of YAML metadata keys to describe these details. On this page, you’ll learn how to specify authors and their affiliations, article summaries like an abstract and keywords, and how to include information on copyright, licensing and funding.
+
+## github
+
+The workflows directory contains GitHub Actions workflows that automate tasks when you push your code to GitHub. You have two workflow files:
+
+ci.yml (Continuous Integration)
+This file likely defines an automated process that runs whenever you push code or create a pull request. Without seeing the exact contents, it probably:
+
+Checks that your code builds correctly
+Runs any tests you've defined
+Validates that your R packages can be installed
+May check code style/quality
+
+What happens when you push to GitHub?
+Once these files are in your repository:
+
+GitHub automatically recognizes and activates these workflows
+They'll run according to their defined triggers (e.g., on push, schedule, etc.)
+You'll see workflow runs in the "Actions" tab of your repository
+The workflows execute on GitHub's servers
+You'll receive notifications if workflows fail
+Any artifacts or outputs will be stored according to the workflow configuration
+Displaying Your Quarto Document on GitHub
+Yes, you can display your Quarto document on your GitHub repository page! Here are three options:
+
+Option 1: GitHub Pages (Recommended)
+This approach creates a website from your repository:
+
+ recommend Option 1 (GitHub Pages) because:
+
+It provides a professional-looking website for your analysis
+The full interactive HTML report will be available
+You can link to it from your README.md
+GitHub Actions can automatically update it when you push changes
+
+Additional Recommendations
+Create a README.md with:
+
+Project description
+Link to the rendered Quarto document (https://santi-rios.github.io/NereidaPipeline/analisis_biodiversidad_marina.html)
+Setup instructions
+Customize the GitHub Pages Theme:
+
+Create a _config.yml file in your repository root with theme settings
+
 
 ### Adquisición de Datos
 

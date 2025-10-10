@@ -41,4 +41,13 @@ clean: ## Limpiar archivos temporales y objetos de targets
 	@rm -rf result result-* _targets/objects/* 2>/dev/null || true
 	@echo "✅ Limpieza completada"
 
+# deploy-docs: 
+#     mkdir -p docs
+# 	cp reportes/analisis_biodiversidad_marina.html docs/index.html
+# 	cp -r reportes/analisis_biodiversidad_marina_files docs/ 2>/dev/null || true
+# 	cp reportes/styles.css docs/ 2>/dev/null || true
+# 	cp -r figures docs/ 2>/dev/null || true
+# 	git add docs/
+# 	git commit -m "Update GitHub Pages documentation"
+
 .DEFAULT_GOAL := help

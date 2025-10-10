@@ -93,7 +93,8 @@ rix(
     "git", 
     # "git-filter-repo",
     "python3",
-    "quarto"
+    "quarto",
+    "git-lfs"
     # "bfg-repo-cleaner" # alternative to git-filter-branch
   ),
   tex_pkgs = c("amsmath"),

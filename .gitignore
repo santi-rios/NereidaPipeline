@@ -9,14 +9,24 @@
 _targets/
 !_targets.R
 
-# Large data files
-*.rds
-*.RData
-data/raw/*.csv
-data/raw/obis/*.csv
-data/processed/*.csv
-data/raw/environmental/*.tif
-data/raw/environmental/*.asc
+# Large raw data files
+data/raw/**/*.csv
+data/raw/**/*.tif
+data/raw/**/*.asc
+data/raw/**/*.rds
+data/raw/**/*.fna.gz
+data/raw/**/*.gff.gz
+data/raw/**/*.faa.gz
+
+# Large processed data files
+data/processed/**/*.csv
+data/processed/**/*.tif
+data/processed/**/*.rds
+
+# Keep these specific files
+!data/processed/final/marine_occurrences.csv
+!data/raw/genomic/species_availability.csv
+!data/processed/genomic/retrieval_summary.csv
 
 # Nix
 result
@@ -28,4 +38,3 @@ result-*
 *.swp
 *~
 archive/*
-tests/*
