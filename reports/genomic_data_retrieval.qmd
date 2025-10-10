@@ -1,0 +1,328 @@
+---
+title: "Genomic Data Retrieval Report"
+subtitle: "Marine Species Conservation Pipeline"
+author: "NereidaPipeline"
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+## Overview
+
+This report summarizes the genomic data retrieval for marine coral species using the `biomartr` package.
+
+```{r setup}
+library(targets)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+# Load the targets
+tar_load(c(genome_availability, genomic_sequences, genomic_quality))
+```
+
+## Species Analyzed
+
+```{r species-list}
+species_list <- c(
+  "Acropora cervicornis",
+  "Acropora palmata",
+  "Porites astreoides"
+)
+
+kable(data.frame(
+  "Species" = species_list,
+  "Common Name" = c("Staghorn Coral", "Elkhorn Coral", "Mustard Hill Coral")
+), caption = "Target Species for Genomic Analysis") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## Database Availability
+
+### Species Found Across Databases
+
+```{r availability-summary}
+if (!is.null(genome_availability)) {
+  avail_summary <- genome_availability %>%
+    group_by(species, database) %>%
+    summarise(
+      assemblies = n(),
+      .groups = "drop"
+    ) %>%
+    tidyr::pivot_wider(
+      names_from = database,
+      values_from = assemblies,
+      values_fill = 0
+    )
+  
+  kable(avail_summary, 
+        caption = "Number of genome assemblies found in each database") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+} else {
+  cat("No availability data available.\n")
+}
+```
+
+### Detailed Assembly Information
+
+```{r detailed-availability}
+if (!is.null(genome_availability)) {
+  genome_availability %>%
+    select(species, database, organism_name, assembly_accession, 
+           bioproject, biosample, seq_rel_date) %>%
+    kable(caption = "Detailed genome assembly information") %>%
+    kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      font_size = 10
+    ) %>%
+    scroll_box(width = "100%", height = "400px")
+}
+```
+
+## Data Retrieval Results
+
+### Summary by Species and Data Type
+
+```{r retrieval-summary}
+if (!is.null(genomic_quality)) {
+  kable(genomic_quality, 
+        caption = "Genomic data retrieval summary",
+        digits = 2) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(2, bold = TRUE) %>%
+    column_spec(3, color = ifelse(genomic_quality$data_completeness == 100, 
+                                   "green", "orange"))
+}
+```
+
+### Data Completeness Visualization
+
+```{r completeness-viz, fig.width=10, fig.height=6}
+if (!is.null(genomic_quality)) {
+  # Reshape data for plotting
+  plot_data <- genomic_quality %>%
+    tidyr::pivot_longer(
+      cols = c(proteome_available, cds_available, gff_available),
+      names_to = "data_type",
+      values_to = "available"
+    ) %>%
+    mutate(
+      data_type = gsub("_available", "", data_type),
+      data_type = tools::toTitleCase(data_type)
+    )
+  
+  ggplot(plot_data, aes(x = species, y = data_type, fill = available)) +
+    geom_tile(color = "white", size = 1) +
+    scale_fill_manual(
+      values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c"),
+      labels = c("TRUE" = "Available", "FALSE" = "Not Available")
+    ) +
+    labs(
+      title = "Genomic Data Retrieval Status",
+      subtitle = "Data types retrieved for each species",
+      x = "Species",
+      y = "Data Type",
+      fill = "Status"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+      axis.text.y = element_text(size = 11),
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
+      legend.position = "bottom"
+    )
+}
+```
+
+### Data Size Statistics
+
+```{r data-sizes}
+if (!is.null(genomic_quality)) {
+  size_data <- genomic_quality %>%
+    filter(!is.na(proteome_size)) %>%
+    select(species, proteome_size, cds_count)
+  
+  if (nrow(size_data) > 0) {
+    kable(size_data,
+          col.names = c("Species", "Proteome Size (MB)", "CDS Count"),
+          caption = "Downloaded data statistics",
+          digits = 2) %>%
+      kable_styling(bootstrap_options = c("striped", "hover"))
+  }
+}
+```
+
+## Successfully Retrieved Data
+
+```{r successful-retrievals}
+if (!is.null(genomic_sequences)) {
+  successful <- data.frame(
+    species = character(),
+    database = character(),
+    data_type = character(),
+    file_path = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (sp_name in names(genomic_sequences)) {
+    if (sp_name == "availability" || sp_name == "retrieval_date" || 
+        sp_name == "database") next
+    
+    sp_data <- genomic_sequences[[sp_name]]
+    
+    for (dtype in c("proteome", "cds", "gff")) {
+      if (!is.null(sp_data[[dtype]]) && sp_data[[dtype]]$status == "success") {
+        successful <- rbind(successful, data.frame(
+          species = sp_name,
+          database = sp_data$database_used,
+          data_type = dtype,
+          file_path = basename(sp_data[[dtype]]$file),
+          stringsAsFactors = FALSE
+        ))
+      }
+    }
+  }
+  
+  if (nrow(successful) > 0) {
+    kable(successful,
+          caption = "Successfully retrieved genomic data files") %>%
+      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+      column_spec(3, bold = TRUE, color = "#27ae60")
+  } else {
+    cat("No data successfully retrieved.\n")
+  }
+}
+```
+
+## Data Not Found
+
+```{r failed-retrievals}
+if (!is.null(genomic_sequences)) {
+  failed <- data.frame(
+    species = character(),
+    data_type = character(),
+    reason = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (sp_name in names(genomic_sequences)) {
+    if (sp_name == "availability" || sp_name == "retrieval_date" || 
+        sp_name == "database") next
+    
+    sp_data <- genomic_sequences[[sp_name]]
+    
+    # Check if species was not available at all
+    if (!is.null(sp_data$status) && sp_data$status == "not_available") {
+      failed <- rbind(failed, data.frame(
+        species = sp_name,
+        data_type = "All",
+        reason = "Species not found in any database",
+        stringsAsFactors = FALSE
+      ))
+      next
+    }
+    
+    for (dtype in c("proteome", "cds", "gff")) {
+      if (!is.null(sp_data[[dtype]]) && sp_data[[dtype]]$status == "error") {
+        failed <- rbind(failed, data.frame(
+          species = sp_name,
+          data_type = dtype,
+          reason = sp_data[[dtype]]$message,
+          stringsAsFactors = FALSE
+        ))
+      }
+    }
+  }
+  
+  if (nrow(failed) > 0) {
+    kable(failed,
+          caption = "Data retrieval failures") %>%
+      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+      column_spec(2, color = "#e74c3c")
+  } else {
+    cat("✓ All requested data successfully retrieved!\n")
+  }
+}
+```
+
+## Citations
+
+### Software Citations
+
+Please cite the following software packages used in this analysis:
+
+#### biomartr
+
+> Drost HG, Paszkowski J. Biomartr: genomic data retrieval with R. 
+> Bioinformatics (2017) 33(8): 1216-1217. 
+> doi:10.1093/bioinformatics/btw821
+
+#### targets
+
+> Landau, W. M., (2021). The targets R package: a dynamic Make-like 
+> function-oriented pipeline toolkit for reproducibility and 
+> high-performance computing. Journal of Open Source Software, 6(57), 2959,
+> https://doi.org/10.21105/joss.02959
+
+#### Biostrings
+
+> Pagès H, Aboyoun P, Gentleman R, DebRoy S (2023). Biostrings: Efficient 
+> manipulation of biological strings. R package version 2.68.0,
+> https://bioconductor.org/packages/Biostrings.
+
+### Data Sources
+
+```{r data-sources}
+if (!is.null(genomic_sequences)) {
+  databases_used <- unique(unlist(lapply(genomic_sequences, function(x) {
+    if (is.list(x) && !is.null(x$database_used)) {
+      return(x$database_used)
+    }
+    return(NULL)
+  })))
+  
+  databases_used <- databases_used[!is.null(databases_used)]
+  
+  if (length(databases_used) > 0) {
+    cat("Data retrieved from the following NCBI databases:\n\n")
+    for (db in databases_used) {
+      if (db == "refseq") {
+        cat("- **NCBI RefSeq**: https://www.ncbi.nlm.nih.gov/refseq/\n")
+        cat("  > O'Leary NA, et al. Reference sequence (RefSeq) database at NCBI: current status, taxonomic expansion, and functional annotation. Nucleic Acids Res. 2016;44(D1):D733-45.\n\n")
+      } else if (db == "genbank") {
+        cat("- **NCBI GenBank**: https://www.ncbi.nlm.nih.gov/genbank/\n")
+        cat("  > Sayers EW, et al. Database resources of the National Center for Biotechnology Information. Nucleic Acids Res. 2022;50(D1):D20-D26.\n\n")
+      }
+    }
+  }
+}
+```
+
+## Session Information
+
+```{r session-info}
+sessionInfo()
+```
+
+## File Locations
+
+All downloaded genomic data files are stored in:
+
+- **Proteomes**: `data/raw/genomic/proteomes/`
+- **CDS**: `data/raw/genomic/cds/`
+- **GFF annotations**: `data/raw/genomic/gff/`
+- **Summary reports**: `data/processed/genomic/`
+
+---
+
+*Report generated on `r Sys.time()`*

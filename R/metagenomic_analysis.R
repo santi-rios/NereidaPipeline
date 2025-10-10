@@ -389,56 +389,179 @@ check_genome_availability <- function(species_list, db = "refseq") {
   }
 }
 
-#' Retrieve complete metagenomic dataset for marine species
+#' Check genome availability across multiple databases
 #' 
 #' @param species_list Character vector of species names
-#' @param db Database to query ("refseq", "genbank", "ensembl")
-#' @param data_types Vector of data types to retrieve ("genome", "proteome", "cds", "gff", "rna")
-#' @param out_dir Base output directory
-#' @return List with all retrieval results
+#' @return Data frame with availability information across databases
 #' @export
-retrieve_complete_metagenomic_data <- function(species_list,
-                                              db = "refseq",
-                                              data_types = c("proteome", "cds", "gff"),
-                                              out_dir = "data/raw/genomic") {
-  
-  message("Starting complete metagenomic data retrieval for ", length(species_list), " species")
-  message("Database: ", db)
-  message("Data types: ", paste(data_types, collapse = ", "))
+check_multi_database_availability <- function(species_list) {
   
   results <- list()
+  databases <- c("refseq", "genbank", "ensembl")
   
-  # Check availability first
-  results$availability <- check_genome_availability(species_list, db)
-  
-  # Retrieve requested data types
-  if ("genome" %in% data_types) {
-    results$genome <- retrieve_marine_genomes(species_list, db, file.path(out_dir, "genomes"))
+  for (db in databases) {
+    message("Checking availability in ", db, "...")
+    
+    for (species in species_list) {
+      tryCatch({
+        is_available <- biomartr::is.genome.available(
+          organism = species,
+          db = db,
+          details = TRUE
+        )
+        
+        if (!is.null(is_available) && nrow(is_available) > 0) {
+          # Convert date columns to character to avoid type conflicts
+          if ("seq_rel_date" %in% names(is_available)) {
+            is_available$seq_rel_date <- as.character(is_available$seq_rel_date)
+          }
+          if ("submission_date" %in% names(is_available)) {
+            is_available$submission_date <- as.character(is_available$submission_date)
+          }
+          if ("release_date" %in% names(is_available)) {
+            is_available$release_date <- as.character(is_available$release_date)
+          }
+          
+          is_available$species <- species
+          is_available$database <- db
+          results[[paste(species, db, sep = "_")]] <- is_available
+        }
+        
+      }, error = function(e) {
+        message("  - ", species, " not found in ", db)
+      })
+    }
   }
   
-  if ("proteome" %in% data_types) {
-    results$proteome <- retrieve_marine_proteomes(species_list, db, file.path(out_dir, "proteomes"))
+  if (length(results) > 0) {
+    combined <- dplyr::bind_rows(results)
+    return(combined)
+  } else {
+    return(NULL)
+  }
+}
+
+#' Retrieve complete metagenomic dataset with fallback databases
+#' 
+#' @param species_list Character vector of species names
+#' @param data_types Vector of data types to retrieve
+#' @param out_dir Base output directory
+#' @param try_databases Vector of databases to try in order
+#' @return List with all retrieval results
+#' @export
+retrieve_complete_metagenomic_data_smart <- function(species_list,
+                                                      data_types = c("proteome", "cds", "gff"),
+                                                      out_dir = "data/raw/genomic",
+                                                      try_databases = c("refseq", "genbank")) {
+  
+  message("Starting smart metagenomic data retrieval for ", length(species_list), " species")
+  message("Will try databases in order: ", paste(try_databases, collapse = ", "))
+  
+  # First, check availability across all databases
+  availability <- check_multi_database_availability(species_list)
+  
+  if (!is.null(availability)) {
+    write.csv(
+      availability,
+      file.path(out_dir, "species_availability.csv"),
+      row.names = FALSE
+    )
+    message("Saved availability report to: ", file.path(out_dir, "species_availability.csv"))
   }
   
-  if ("cds" %in% data_types) {
-    results$cds <- retrieve_marine_cds(species_list, db, file.path(out_dir, "cds"))
+  results <- list()
+  results$availability <- availability
+  
+  # For each species, try databases in order
+  for (species in species_list) {
+    species_results <- list()
+    
+    # Find which databases have this species
+    if (!is.null(availability)) {
+      available_dbs <- availability %>%
+        filter(species == !!species) %>%
+        pull(database)
+    } else {
+      available_dbs <- character(0)
+    }
+    
+    # Select database (prefer order in try_databases)
+    selected_db <- NULL
+    for (db in try_databases) {
+      if (db %in% available_dbs) {
+        selected_db <- db
+        break
+      }
+    }
+    
+    if (is.null(selected_db)) {
+      message("✗ ", species, " not available in any database")
+      species_results$status <- "not_available"
+      results[[species]] <- species_results
+      next
+    }
+    
+    message("\nRetrieving ", species, " from ", selected_db)
+    species_results$database_used <- selected_db
+    
+    # Retrieve each data type
+    for (dtype in data_types) {
+      tryCatch({
+        result <- switch(dtype,
+          "genome" = biomartr::getGenome(
+            db = selected_db,
+            organism = species,
+            path = file.path(out_dir, "genomes"),
+            reference = FALSE
+          ),
+          "proteome" = biomartr::getProteome(
+            db = selected_db,
+            organism = species,
+            path = file.path(out_dir, "proteomes"),
+            reference = FALSE
+          ),
+          "cds" = biomartr::getCDS(
+            db = selected_db,
+            organism = species,
+            path = file.path(out_dir, "cds"),
+            reference = FALSE
+          ),
+          "gff" = biomartr::getGFF(
+            db = selected_db,
+            organism = species,
+            path = file.path(out_dir, "gff"),
+            reference = FALSE
+          ),
+          "rna" = biomartr::getRNA(
+            db = selected_db,
+            organism = species,
+            path = file.path(out_dir, "rna"),
+            reference = FALSE
+          )
+        )
+        
+        species_results[[dtype]] <- list(
+          status = "success",
+          file = result,
+          download_date = Sys.time()
+        )
+        
+      }, error = function(e) {
+        species_results[[dtype]] <- list(
+          status = "error",
+          message = e$message
+        )
+        message("  ✗ Failed to retrieve ", dtype, ": ", e$message)
+      })
+    }
+    
+    results[[species]] <- species_results
   }
   
-  if ("gff" %in% data_types) {
-    results$gff <- retrieve_marine_gff(species_list, db, file.path(out_dir, "gff"))
-  }
-  
-  if ("rna" %in% data_types) {
-    results$rna <- retrieve_marine_rna(species_list, db, file.path(out_dir, "rna"))
-  }
-  
-  # Get assembly statistics if available
-  results$assembly_stats <- get_assembly_stats(species_list, db, file.path(out_dir, "assembly_stats"))
-  
-  results$retrieval_date <- Sys.time()
-  results$database <- db
-  
-  message("✓ Complete metagenomic data retrieval finished")
+  # Save summary report
+  saveRDS(results, file.path(out_dir, "retrieval_summary.rds"))
+  message("\n✓ Complete metagenomic data retrieval finished")
+  message("Summary saved to: ", file.path(out_dir, "retrieval_summary.rds"))
   
   return(results)
 }
@@ -816,3 +939,126 @@ retrieve_complete_metagenomic_data <- function(species_list,
   
 #   return(priorities)
 # }
+#' Assess quality of retrieved genomic data
+#' 
+#' @param genomic_sequences Results from retrieve_complete_metagenomic_data_smart
+#' @return Data frame with quality metrics
+#' @export
+assess_genomic_data_quality <- function(genomic_sequences) {
+  
+  quality_results <- list()
+  
+  for (species in names(genomic_sequences)) {
+    if (species == "availability") next
+    
+    sp_data <- genomic_sequences[[species]]
+    
+    quality_metrics <- list(
+      species = species,
+      database = sp_data$database_used %||% NA,
+      data_completeness = 0,
+      proteome_available = FALSE,
+      cds_available = FALSE,
+      gff_available = FALSE,
+      proteome_size = NA,
+      cds_count = NA
+    )
+    
+    # Check proteome
+    if (!is.null(sp_data$proteome) && sp_data$proteome$status == "success") {
+      quality_metrics$proteome_available <- TRUE
+      quality_metrics$data_completeness <- quality_metrics$data_completeness + 1
+      
+      # Get file size
+      if (file.exists(sp_data$proteome$file)) {
+        quality_metrics$proteome_size <- file.size(sp_data$proteome$file) / (1024^2) # MB
+      }
+    }
+    
+    # Check CDS
+    if (!is.null(sp_data$cds) && sp_data$cds$status == "success") {
+      quality_metrics$cds_available <- TRUE
+      quality_metrics$data_completeness <- quality_metrics$data_completeness + 1
+      
+      # Count sequences if file exists
+      if (file.exists(sp_data$cds$file)) {
+        tryCatch({
+          seqs <- Biostrings::readDNAStringSet(sp_data$cds$file)
+          quality_metrics$cds_count <- length(seqs)
+        }, error = function(e) {
+          message("Could not read CDS file for ", species)
+        })
+      }
+    }
+    
+    # Check GFF
+    if (!is.null(sp_data$gff) && sp_data$gff$status == "success") {
+      quality_metrics$gff_available <- TRUE
+      quality_metrics$data_completeness <- quality_metrics$data_completeness + 1
+    }
+    
+    quality_metrics$data_completeness <- quality_metrics$data_completeness / 3 * 100
+    
+    quality_results[[species]] <- quality_metrics
+  }
+  
+  dplyr::bind_rows(quality_results)
+}
+
+#' Generate visualization of data retrieval success
+#' 
+#' @param quality_data Output from assess_genomic_data_quality
+#' @param out_dir Output directory for plot
+#' @export
+plot_retrieval_summary <- function(quality_data, out_dir = "data/processed/genomic") {
+  
+  if (!dir.exists(out_dir)) {
+    dir.create(out_dir, recursive = TRUE)
+  }
+  
+  library(ggplot2)
+  
+  # Reshape data for plotting
+  plot_data <- quality_data %>%
+    tidyr::pivot_longer(
+      cols = c(proteome_available, cds_available, gff_available),
+      names_to = "data_type",
+      values_to = "available"
+    ) %>%
+    mutate(
+      data_type = gsub("_available", "", data_type),
+      data_type = tools::toTitleCase(data_type)
+    )
+  
+  # Create plot
+  p <- ggplot(plot_data, aes(x = species, y = data_type, fill = available)) +
+    geom_tile(color = "white", size = 1) +
+    scale_fill_manual(
+      values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c"),
+      labels = c("TRUE" = "Available", "FALSE" = "Not Available")
+    ) +
+    labs(
+      title = "Genomic Data Retrieval Summary",
+      subtitle = paste("Retrieved from:", unique(quality_data$database)),
+      x = "Species",
+      y = "Data Type",
+      fill = "Status"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.title = element_text(face = "bold")
+    )
+  
+  ggsave(
+    file.path(out_dir, "retrieval_summary.png"),
+    plot = p,
+    width = 10,
+    height = 6,
+    dpi = 300
+  )
+  
+  message("Plot saved to: ", file.path(out_dir, "retrieval_summary.png"))
+  
+  return(p)
+}

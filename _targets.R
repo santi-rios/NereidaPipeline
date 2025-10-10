@@ -13,11 +13,11 @@ suppressPackageStartupMessages({
   library(taxa)            # Taxonomic data management
   library(terra)           # Spatial data processing
   library(nodbi)           # NoSQL database interface
-  library(biomaRt)         # For genomic sequence retrieval
+  library(biomartr)         # For genomic sequence retrieval
 })
 
 # Conditional loading of optional packages
-optional_packages <- c("biomaRt", "wikitaxa", "prism", "myTAI", "geotargets")
+optional_packages <- c("biomartr", "wikitaxa", "prism", "myTAI", "geotargets")
 for (pkg in optional_packages) {
   if (requireNamespace(pkg, quietly = TRUE)) {
     message("Loaded optional package: ", pkg)
@@ -164,25 +164,92 @@ list(
     }
   ),
   # === METAGENOMIC ANALYSIS PHASE ===
-  # 1. Retrieve genomic sequences for marine species using biomartr
+  # 1. Check availability across databases
   tar_target(
-    genomic_sequences,
+    genome_availability,
     {
-      message("Starting genomic sequence retrieval with biomartr...")
-      
-      # Retrieve complete metagenomic data
-      # Options: "genome", "proteome", "cds", "gff", "rna"
-      metagenomic_data <- retrieve_complete_metagenomic_data(
-        species_list = MARINE_SPECIES,
-        db = "refseq",  # Can also try "genbank" or "ensembl"
-        data_types = c("proteome", "cds", "gff"),  # Start with these, add "genome" if needed
-        out_dir = "data/raw/genomic"
-      )
-      
-      metagenomic_data
+      message("Checking genome availability across databases...")
+      check_multi_database_availability(MARINE_SPECIES)
     }
   ),
   
+  # 2. Retrieve genomic sequences with smart fallback
+  tar_target(
+    genomic_sequences,
+    {
+      message("Starting smart genomic sequence retrieval...")
+      
+      retrieve_complete_metagenomic_data_smart(
+        species_list = MARINE_SPECIES,
+        data_types = c("proteome", "cds", "gff"),
+        out_dir = "data/raw/genomic",
+        try_databases = c("refseq", "genbank")
+      )
+    }
+  ),
+  
+  # 3. Create summary report of retrieved data
+  tar_target(
+    genomic_summary_report,
+    {
+      if (!is.null(genomic_sequences)) {
+        # Create summary data frame
+        summary_data <- data.frame(
+          species = character(),
+          database = character(),
+          proteome = logical(),
+          cds = logical(),
+          gff = logical(),
+          stringsAsFactors = FALSE
+        )
+        
+        for (species in MARINE_SPECIES) {
+          if (!is.null(genomic_sequences[[species]])) {
+            sp_data <- genomic_sequences[[species]]
+            summary_data <- rbind(summary_data, data.frame(
+              species = species,
+              database = sp_data$database_used %||% "none",
+              proteome = !is.null(sp_data$proteome) && sp_data$proteome$status == "success",
+              cds = !is.null(sp_data$cds) && sp_data$cds$status == "success",
+              gff = !is.null(sp_data$gff) && sp_data$gff$status == "success",
+              stringsAsFactors = FALSE
+            ))
+          }
+        }
+        
+        # Save summary
+        write.csv(
+          summary_data,
+          "data/processed/genomic/retrieval_summary.csv",
+          row.names = FALSE
+        )
+        
+        summary_data
+      }
+    }
+  ),
+  # 4. Assess data quality
+  tar_target(
+    genomic_quality,
+    {
+      if (!is.null(genomic_sequences)) {
+        assess_genomic_data_quality(genomic_sequences)
+      }
+    }
+  ),
+  
+  # 5. Visualize retrieval summary
+  tar_target(
+    genomic_viz,
+    {
+      if (!is.null(genomic_quality)) {
+        plot_retrieval_summary(
+          genomic_quality,
+          out_dir = "data/processed/genomic"
+        )
+      }
+    }
+  ),
   # # 2. Get assembly statistics for quality assessment
   # tar_target(
   #   assembly_statistics,
@@ -331,6 +398,23 @@ list(
   #     )
   #   }
   # ),
+  # 6. Generate comprehensive report
+  tar_target(
+    genomic_report,
+    {
+      if (!is.null(genomic_quality)) {
+        # Render the Quarto report
+        quarto::quarto_render(
+          "reports/genomic_data_retrieval.qmd",
+          output_file = "genomic_data_retrieval.html",
+          output_format = "html"
+        )
+        
+        message("✓ Genomic data retrieval report generated")
+        file.path("reports", "genomic_data_retrieval.html")
+      }
+    }
+  ),
   # === DATA CLEANING PHASE ===
   # 4. Clean and validate occurrence data
   tar_target(

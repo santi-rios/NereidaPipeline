@@ -58,7 +58,10 @@ targets_packages <- c(
   "DBI",
   "duckdb",
   "prism",
-  "geotargets"
+  "geotargets",
+  "tidyr",  # For data reshaping in quality assessment
+  "knitr",  # For report generation
+  "kableExtra"  # For nice tables in reports
 )
 
 # Optional packages (only if available)
