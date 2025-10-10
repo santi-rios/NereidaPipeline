@@ -363,3 +363,47 @@ rix(
 ### Conclusion
 
 This project structure and setup will allow you to create a reproducible workflow for studying marine biodiversity using R and Python. The use of `r-rix` for environment management, `targets` for pipeline management, and GitHub Actions for CI/CD will ensure that your analyses are reproducible and well-documented.
+
+## License
+
+The code in this repository, including all R scripts, the `targets` pipeline, and Quarto setup, is licensed under the **MIT License**. See the `LICENSE` file for full details.
+
+The generated academic report (e.g., `report.html`) is licensed under a **Creative Commons Attribution 4.0 International (CC BY 4.0)** license.
+
+The input marine occurrence data is sourced from [Name of Provider, e.g., GBIF] and is subject to its own licensing terms, which can be found [here (link to data license)].
+
+ It's one of the most popular licenses in the open-source world, especially for software and code-based projects.
+
+Why the MIT License is a Great Fit for You:
+
+    Maximizes Reuse and Collaboration: It allows anyone—other researchers, students, institutions, or even companies—to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of your code without restriction. This aligns perfectly with the open-science ethos.
+
+    Simple and Understandable: The license is short, clear, and doesn't require a legal expert to understand. This lowers the barrier for others to use your work.
+
+    Compatible with Your Dependencies: The R packages you mentioned (rix, targets, etc.) are almost certainly licensed under permissive licenses like MIT or similar (Apache 2.0, BSD). Using MIT ensures perfect compatibility.
+
+    Ideal for Academic Building Blocks: Your project is a toolkit for analysis. The MIT License allows others to take your code, adapt it for their own marine data (or even other domains), and build upon it, which can lead to citations and collaborations.
+
+What the MIT License Requires:
+
+The only requirement is that you include the original copyright notice and the MIT License text in any substantial portion of the software that is redistributed. In practice, this means anyone who uses your code must keep your LICENSE file intact.
+
+Important Clarifications and Other Components
+
+Your project has multiple components (code, data, report). The license above applies to your code. Let's break it down:
+1. Your Code (R scripts, targets pipeline, Quarto files)
+
+This is what the MIT License covers.
+2. The Input Data (Public Marine Occurrence Data)
+
+You generally do not license data you do not own.
+Since the data is publicly available from other sources, you must respect its original license. Your responsibility is to clearly attribute the data sources in your documentation (e.g., in the README).
+
+    Example: If you use data from the Global Biodiversity Information Facility (GBIF), their data is typically licensed under CC0 1.0 (Public Domain Dedication) or CC BY 4.0, which requires attribution. You would state in your README: "The occurrence data in this repository was sourced from GBIF and is made available under the CC BY 4.0 license."
+
+3. The Output Report (Generated Quarto HTML/PDF)
+
+The academic report you generate is a separate creative work. For this, a Creative Commons license is more appropriate.
+
+    Recommended: CC BY 4.0
+    This license allows others to distribute, remix, adapt, and build upon your report, even commercially, as long as they credit you for the original creation. This is the standard for open-access academic work and ensures you get credit.

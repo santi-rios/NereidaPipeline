@@ -399,22 +399,22 @@ list(
   #   }
   # ),
   # 6. Generate comprehensive report
-  tar_target(
-    genomic_report,
-    {
-      if (!is.null(genomic_quality)) {
-        # Render the Quarto report
-        quarto::quarto_render(
-          "reports/genomic_data_retrieval.qmd",
-          output_file = "genomic_data_retrieval.html",
-          output_format = "html"
-        )
+  # tar_target(
+  #   genomic_report,
+  #   {
+  #     if (!is.null(genomic_quality)) {
+  #       # Render the Quarto report
+  #       quarto::quarto_render(
+  #         "reports/genomic_data_retrieval.qmd",
+  #         output_file = "genomic_data_retrieval.html",
+  #         output_format = "html"
+  #       )
         
-        message("✓ Genomic data retrieval report generated")
-        file.path("reports", "genomic_data_retrieval.html")
-      }
-    }
-  ),
+  #       message("✓ Genomic data retrieval report generated")
+  #       file.path("reports", "genomic_data_retrieval.html")
+  #     }
+  #   }
+  # ),
   # === DATA CLEANING PHASE ===
   # 4. Clean and validate occurrence data
   tar_target(

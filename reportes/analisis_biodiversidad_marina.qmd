@@ -56,6 +56,10 @@ lang: es
 
 <!-- TODO: fetch articles https://www.icmyl.unam.mx/es/quienes-somos/publicaciones-del-instituto -->
 
+<!-- TODO: ensamble biomatr -->
+
+<!-- TODO: https://roxygen2.r-lib.org/ -->
+
 ```{r}
 #| label: setup
 #| include: false
@@ -70,7 +74,7 @@ suppressPackageStartupMessages({
   library(leaflet)
   library(ggplot2)  # <-- AÑADIR ESTO
   library(tidyr)    # <-- AÑADIR ESTO
-  # library(kableExtra) # Descomentar si se usa
+  library(kableExtra) # Descomentar si se usa
 })
 
 # Cargar los objetos del pipeline de targets necesarios para el reporte.
@@ -84,7 +88,10 @@ tar_load(
     "spatial_analysis",
     "habitat_models",
     "data_summaries",
-    "pipeline_report"
+    "pipeline_report",
+    "genome_availability",
+    "genomic_sequences",
+    "genomic_quality"
   )
 )
 
@@ -115,32 +122,12 @@ safe_check <- function(obj_name) {
   (if (is.data.frame(get(obj_name))) nrow(get(obj_name)) > 0 else TRUE) &&
   (if (is.list(get(obj_name))) length(get(obj_name)) > 0 else TRUE)
 }
+
 ```
 
 [@zhang2017]
 
 ## Resumen Ejecutivo
-
-
-
-```{r}
-#| label: executive-summary
-#| results: asis
-
-if (safe_check("pipeline_report")) {
-  cat("**Especies analizadas:** ", length(pipeline_report$species_analyzed), "\n\n")
-  cat("**Registros procesados:** ", pipeline_report$data_acquisition$cleaned_records, "\n\n")
-  cat("**Estado del pipeline:** ", pipeline_report$pipeline_status, "\n\n")
-  cat("**Fecha de análisis:** ", format(pipeline_report$pipeline_completion_date, "%d/%m/%Y"), "\n\n")
-} else {
-  cat("⚠️ **Pipeline en progreso o no completado**\n\n")
-  cat("Para generar este reporte completo, primero ejecuta:\n\n")
-  cat("```r\n")
-  cat("library(targets)\n")
-  cat("tar_make()\n")
-  cat("```\n\n")
-}
-```
 
 ### Estado del pipeline
 
@@ -361,6 +348,44 @@ Al hacer esto, no solo presenta sus resultados, sino que también demuestra que 
 5. **Generar recomendaciones** para conservación basadas en evidencia
 
 ## Metodología
+
+### Sujetos Experimentales
+
+```{r}
+#| label: executive-summary
+#| results: asis
+
+if (safe_check("pipeline_report")) {
+  cat("**Especies analizadas:** ", length(pipeline_report$species_analyzed), "\n\n")
+  cat("**Registros procesados:** ", pipeline_report$data_acquisition$cleaned_records, "\n\n")
+  cat("**Estado del pipeline:** ", pipeline_report$pipeline_status, "\n\n")
+  cat("**Fecha de análisis:** ", format(pipeline_report$pipeline_completion_date, "%d/%m/%Y"), "\n\n")
+} else {
+  cat("⚠️ **Pipeline en progreso o no completado**\n\n")
+  cat("Para generar este reporte completo, primero ejecuta:\n\n")
+  cat("```r\n")
+  cat("library(targets)\n")
+  cat("tar_make()\n")
+  cat("```\n\n")
+}
+```
+
+## Species Analyzed
+
+```{r species-list}
+species_list <- c(
+  "Acropora cervicornis",
+  "Acropora palmata",
+  "Porites astreoides"
+)
+
+kable(data.frame(
+  "Species" = species_list,
+  "Common Name" = c("Staghorn Coral", "Elkhorn Coral", "Mustard Hill Coral")
+), caption = "Target Species for Genomic Analysis") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
 
 ::: {.callout-note}
 'direnv: error /home/santi/Projects/NereidaPipeline/.envrc is blocked. Run `direnv allow` to approve its content'
@@ -823,6 +848,55 @@ if (exists("cleaned_occurrences") && !is.null(cleaned_occurrences) && nrow(clean
   # kable_styling(bootstrap_options = c("striped", "hover"))
 }
 ```
+
+## biomatr
+
+Organism-centric: Functions take species names directly, no need to search for datasets
+Multiple databases: Can query RefSeq, GenBank, or Ensembl
+Multiple data types: Genome, proteome, CDS, GFF, RNA
+Availability checking: Check what's available before downloading
+Assembly stats: Get quality metrics for assemblies
+Better error handling: Clear messages about what's available and what failed
+
+Based on the biomartr documentation, here are suggested next steps:
+
+Sequence Analysis - Use the retrieved sequences for comparative genomics
+Functional Annotation - Extract GO terms and protein domains
+Homology Analysis - Find orthologs across species
+Phylogenetic Analysis - Use myTAI for evolutionary transcriptomics
+Would you like me to implement any of these next steps? The most logical continuation would be:
+
+Functional annotation - Extract GO terms and protein domains from the successfully retrieved A. palmata data
+Sequence statistics - Analyze the proteome and CDS sequences
+Integration with occurrence data - Link genomic data with the spatial occurrence data you already have
+
+Now when you run the pipeline:
+
+It will check all databases (refseq, genbank, ensembl)
+Generate a comprehensive availability report
+Download all available data
+Assess data quality
+Generate a beautiful HTML report with:
+Species information
+Database availability tables
+Success/failure summaries
+Data size statistics
+Visual heatmaps
+Proper citations for all software and data sources
+The report will be saved as reports/genomic_data_retrieval.html and can be opened in any browser!
+
+ Next Steps for Analysis
+Based on the biomartr documentation, here are suggested next steps:
+
+Sequence Analysis - Use the retrieved sequences for comparative genomics
+Functional Annotation - Extract GO terms and protein domains
+Homology Analysis - Find orthologs across species
+Phylogenetic Analysis - Use myTAI for evolutionary transcriptomics
+Would you like me to implement any of these next steps? The most logical continuation would be:
+
+Functional annotation - Extract GO terms and protein domains from the successfully retrieved A. palmata data
+Sequence statistics - Analyze the proteome and CDS sequences
+Integration with occurrence data - Link genomic data with the spatial occurrence data you already have
 
 ## Resultados
 
