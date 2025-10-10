@@ -2,9 +2,42 @@
 title: "Análisis de Biodiversidad Marina: Pipeline Integrado para Conservación y Evolución"
 subtitle: "Reporte Técnico de Análisis Espacial y Evolutivo de Especies Marinas"
 date: "`r Sys.Date()`"
-author: "Laboratorio de Biodiversidad Marina"
+author:
+  - name: Santiago García Ríos
+    degrees: 
+      - Biólogo
+      - Maestro en C. (trámite)
+    roles: "Conceived and designed the study, analysed the results and wrote the manuscript."
+    orcid: 0000-0001-6237-9616
+    email: santiago_gr@ciencias.unam.mx
+    phone: 55-81-07-99-11
+    url: https://santi-rios.github.io/
+    affiliation: 
+      - name: Universidad Nacional Autónoma de México
+        city: Ciudad de México
+abstract: > 
+  Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo.
+keywords:
+  - Biodiversidad
+  - Pipeline
+license:
+  text: >
+    The code in this repository is licensed under MIT License and the academic quarto report is licensed under CC BY 4.0
+  type: open-access
+  url: https://www.gnu.org/licenses/fdl-1.3-standalone.html
+copyright: 
+  holder: Josiah Carberry
+  year: 2008
+citation: 
+  container-title: Journal of Psychoceramics
+  volume: 1
+  issue: 1
+  doi: 10.5555/12345678
+funding: "The author received no specific funding for this work."
 format:
   html:
+    title-block-banner: "../figures/banner.png"
+    title-block-banner-color: white
     toc: true
     toc-depth: 3
     number-sections: true
@@ -18,6 +51,10 @@ execute:
 bibliography: "../referencias/referencias.bib"
 lang: es
 ---
+
+<!-- TODO: CV orcid y PDF y https://santi-rios.github.io/ -->
+
+<!-- TODO: fetch articles https://www.icmyl.unam.mx/es/quienes-somos/publicaciones-del-instituto -->
 
 ```{r}
 #| label: setup
@@ -84,7 +121,7 @@ safe_check <- function(obj_name) {
 
 ## Resumen Ejecutivo
 
-Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo.
+
 
 ```{r}
 #| label: executive-summary
