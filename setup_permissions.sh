@@ -15,6 +15,7 @@ SCRIPTS=(
     "fix_git_large_files.sh"
     "fix_nix_warnings.sh"
     "setup_permissions.sh"
+    "pipeline.sh"
 )
 
 echo "Otorgando permisos de ejecución a:"

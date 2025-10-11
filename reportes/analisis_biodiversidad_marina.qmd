@@ -61,6 +61,8 @@ lang: es
 
 <!-- TODO: https://roxygen2.r-lib.org/ -->
 
+<!-- TODO: jupyter -->
+
 ```{r}
 #| label: setup
 #| include: false
@@ -945,6 +947,54 @@ Sequence statistics - Analyze the proteome and CDS sequences
 Integration with occurrence data - Link genomic data with the spatial occurrence data you already have
 
 ## Resultados
+
+### Datos Ómicos
+
+Se encontraron estas especies en las bases de datos 
+
+<!-- TODO: poner automáticamente las bases de datos) -->
+
+```{r availability-summary}
+if (!is.null(genome_availability)) {
+  avail_summary <- genome_availability %>%
+    group_by(species, database) %>%
+    summarise(
+      assemblies = n(),
+      .groups = "drop"
+    ) %>%
+    tidyr::pivot_wider(
+      names_from = database,
+      values_from = assemblies,
+      values_fill = 0
+    )
+  
+  kable(avail_summary, 
+        caption = "Number of genome assemblies found in each database") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+} else {
+  cat("No availability data available.\n")
+}
+```
+
+Detailed Assembly Information
+
+```{r detailed-availability}
+if (!is.null(genome_availability)) {
+  genome_availability %>%
+    select(species, database, organism_name, assembly_accession, 
+           bioproject, biosample, seq_rel_date) %>%
+    kable(caption = "Detailed genome assembly information") %>%
+    kable_styling(
+      bootstrap_options = c("striped", "hover", "condensed"),
+      font_size = 10
+    ) %>%
+    scroll_box(width = "100%", height = "400px")
+}
+```
+
+### Resumen por especies y tipo de datos
+
+
 
 ### Distribución Espacial de Especies
 

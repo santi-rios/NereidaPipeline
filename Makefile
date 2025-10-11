@@ -36,6 +36,9 @@ git-fix: ## Arreglar archivos grandes en el historial de Git
 nix-warnings: ## Arreglar advertencias de configuración de Nix
 	@./fix_nix_warnings.sh
 
+pipeline: ## Correr pipeline
+	@./pipeline.sh
+
 clean: ## Limpiar archivos temporales y objetos de targets
 	@echo "🧹 Limpiando archivos temporales..."
 	@rm -rf result result-* _targets/objects/* 2>/dev/null || true

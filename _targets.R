@@ -594,7 +594,7 @@ list(
           )
         
         # Convert to list format for nodbi
-        occurrence_records <- split(occurrence_list, seq(nrow(occurrence_list)))
+        occurrence_records <- split(occurrence_list, seq_len(nrow(occurrence_list)))
         
         tryCatch({
           nodbi::docdb_create(db_src, "occurrences", occurrence_records)
@@ -653,7 +653,7 @@ list(
             stored_at = Sys.time()
           )
         
-        env_records <- split(env_data, seq(nrow(env_data)))
+        env_records <- split(env_data, seq_len(nrow(env_data)))
         
         tryCatch({
           nodbi::docdb_create(db_src, "environmental_data", env_records)
