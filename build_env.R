@@ -61,7 +61,9 @@ targets_packages <- c(
   "geotargets",
   "tidyr",  # For data reshaping in quality assessment
   "knitr",  # For report generation
-  "kableExtra"  # For nice tables in reports
+  "kableExtra",  # For nice tables in reports
+  # packages for quarto code-linking
+  "rmarkdown", "downlit", "xml2"
 )
 
 # Optional packages (only if available)

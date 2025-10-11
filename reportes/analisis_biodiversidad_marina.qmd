@@ -36,14 +36,27 @@ citation:
 funding: "The author received no specific funding for this work."
 format:
   html:
+    # title
     title-block-banner: "../figures/banner.png"
     title-block-banner-color: white
+    # toc
     toc: true
     toc-depth: 3
+    toc-location: body
     number-sections: true
+    anchor-sections: true
+    # code
     code-fold: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    # figures and links
+    lightbox: true
+    link-external-icon: true
+    # theme
     theme: cosmo
-    css: styles.css
+    # css: styles.css
+    # render
     embed-resources: true
 execute: 
   echo: false
