@@ -16,8 +16,7 @@ author:
       - name: Universidad Nacional Autónoma de México
         city: Ciudad de México
 abstract: > 
-  Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo.
-keywords:
+  Este reporte presenta los resultados del pipeline integrado de análisis de biodiversidad marina, enfocado en la conservación y evolución de especies marinas del Caribe. El análisis incluye datos de ocurrencia de múltiples fuentes, validación de coordenadas, modelado de idoneidad de hábitat, y análisis espacial comprehensivo. Combina tres herramientas clave de manera muy efectiva: Make como orquestador, Nix (a través de rix) como gestor del ambiente computacional y {targets} para la gestión de la pipeline de análisis.
   - Biodiversidad
   - Pipeline
 license:
@@ -48,7 +47,7 @@ format:
     # code
     code-fold: true
     code-copy: true
-    code-link: true
+    # code-link: true
     code-tools: true
     # figures and links
     lightbox: true
@@ -88,9 +87,9 @@ suppressPackageStartupMessages({
   library(DT)
   library(plotly)
   library(leaflet)
-  library(ggplot2)  # <-- AÑADIR ESTO
-  library(tidyr)    # <-- AÑADIR ESTO
-  library(kableExtra) # Descomentar si se usa
+  library(ggplot2)
+  library(tidyr)
+  library(kableExtra)
 })
 
 # Cargar los objetos del pipeline de targets necesarios para el reporte.
@@ -141,105 +140,6 @@ safe_check <- function(obj_name) {
 
 ```
 
-[@zhang2017]
-
-## Resumen Ejecutivo
-
-### Estado del pipeline
-
-```{r}
-#| label: pipeline-status
-#| echo: true
-
-# Show pipeline status
-cat("Estado de los objetos del pipeline:\n\n")
-for (target in names(loaded_targets)) {
-  status <- if (loaded_targets[[target]]) "✓ Disponible" else "✗ No disponible"
-  cat("-", target, ":", status, "\n")
-}
-
-# Check targets status
-if (requireNamespace("targets", quietly = TRUE)) {
-  cat("\nEstado general del pipeline:\n")
-  tar_progress() |>
-    count(progress) |>
-    kable(col.names = c("Estado", "Número de targets"))
-}
-```
-
-### Datos disponibles
-
-```{r}
-#| label: data-overview
-
-# Create overview of available data
-data_overview <- data.frame(
-  Objeto = names(loaded_targets),
-  Disponible = sapply(loaded_targets, function(x) if(x) "Sí" else "No"),
-  Tipo = sapply(names(loaded_targets), function(name) {
-    if (loaded_targets[[name]] && exists(name)) {
-      obj <- get(name)
-      if (is.data.frame(obj)) {
-        paste("data.frame (", nrow(obj), " filas)")
-      } else if (is.list(obj)) {
-        paste("lista (", length(obj), " elementos)")
-      } else {
-        class(obj)[1]
-      }
-    } else {
-      "No disponible"
-    }
-  })
-)
-
-kable(
-  data_overview,
-  caption = "Resumen de objetos del pipeline",
-  format = "html"
-) 
-# |>
-#   kable_styling(bootstrap_options = c("striped", "hover"))
-```
-
-### Análisis de Datos de Ocurrencia
-
-```{r}
-#| label: occurrence-analysis
-
-if (safe_check("cleaned_occurrences")) {
-  
-  # Basic summary
-  cat("### Resumen de Datos Limpios\n\n")
-  cat("- **Total de registros:** ", nrow(cleaned_occurrences), "\n")
-  cat("- **Especies únicas:** ", length(unique(cleaned_occurrences$scientificName)), "\n")
-  cat("- **Rango temporal:** ", min(cleaned_occurrences$year, na.rm = TRUE), "-", 
-      max(cleaned_occurrences$year, na.rm = TRUE), "\n\n")
-  
-  # Species summary
-  species_summary <- cleaned_occurrences |>
-    group_by(scientificName) |>
-    summarise(
-      Registros = n(),
-      `Años únicos` = length(unique(year[!is.na(year)])),
-      `Lat mín` = round(min(decimalLatitude, na.rm = TRUE), 2),
-      `Lat máx` = round(max(decimalLatitude, na.rm = TRUE), 2),
-      `Lon mín` = round(min(decimalLongitude, na.rm = TRUE), 2),
-      `Lon máx` = round(max(decimalLongitude, na.rm = TRUE), 2),
-      .groups = "drop"
-    )
-  
-  kable(
-    species_summary,
-    caption = "Resumen por especie",
-    format = "html"
-  ) 
-  # |>
-  #   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
-  
-} else {
-  cat("⚠️ Datos de ocurrencia no disponibles. Ejecuta el pipeline primero.\n")
-}
-```
 
 ## Introducción
 
@@ -247,167 +147,55 @@ La biodiversidad marina enfrenta amenazas sin precedentes debido al cambio clim�
 
 La robustez metodológica es tan importante como los resultados mismos, especialmente en campos como la biología de la conservación y la evolución, donde las decisiones pueden tener implicaciones a largo plazo y deben basarse en evidencia auditable y reproducible.
 
-
-[@dolstra2006]
-
-This thesis is about getting computer programs from one machine to another—and having them still work when they get there. This is the problem of software deployment. Though it is a part of the field of Software Configuration Management (SCM), it has not been a subject of academic study until quite recently [169]. The development of principles and tools to support the deployment process has largely been relegated to industry, system administrators, and Unix hackers. This has resulted in a large number of often ad hoc tools that typically automate manual practices but do not address fundamental issues in a systematic and disciplined way. This is evidenced by the huge number of mailing list and forum postings about deployment failures, ranging from applications not working due to missing dependencies, to subtle malfunctions caused by incompatible components. Deployment problems also seem curiously resistant to automation: the same concrete problems appear time and again. Deployment is especially difficult in heavily component-based systems—such as Unix-based open source software—because the effort of dealing with the dependencies can increase super-linearly with each additional dependency. This thesis describes a system for software deployment called Nix that addresses many of the problems that plague existing deployment systems. In this introductory chapter I describe the problem of software deployment, give an overview of existing systems and the limitations that motivate
-
-Software deployment is the problem of managing the distribution of software to end-user machines. That is, a developer has created some piece of software, and this ultimately has to end up on the machines of end-users. After the initial installation of the software, it might need to be upgraded or uninstalled. Presumably, the developer has tested the software and found it to work sufficiently well, so the challenge is to make sure that the software works just as well, i.e., the same, on the end-user machines. I will informally refer to this as correct deployment: given identical inputs, the software should behave the same on an end-user machine as on the developer machine1. This should be a simple problem. For instance, if the software consists of a set of files, then deployment should be a simple matter of copying those to the target machines. In
-
-practice, deployment turns out to be much harder. This has a number of causes. These fall into two broad categories: environment issues and manageability issues.  Environment issues The first category is essentially about correctness. The software might make all sorts of demands about the environment in which it executes: that certain other software components are present in the system, that certain configuration files exist, that certain modifications were made to the Windows registry, and so on. If any of those environmental characteristics does not hold, then there is a possibility that the software does not work the same as it did on the developer machine. Some concrete issues are the following:  • A software component is almost never self-contained; rather, it depends on other components to do some work on its behalf. These are its dependencies. For correct deployment, it is necessary that all dependencies are identified. This identification is quite hard, however, as it is often difficult to test whether the dependency specification is complete. After all, if we forget to specify a dependency, we don’t discover that fact if the machine on which we are testing already happens to have the dependency installed.  • Dependencies are not just a runtime issue. To build a component in the first place we need certain dependencies (such as compilers), and these need not be the same as the runtime dependencies, although there may be some overlap. In general, deployment of the build-time dependencies is not an end-user issue, but it might be in sourcebased deployment scenarios; that is, when a component is deployed in source form. This is common in the open source world.  • Dependencies also need to be compatible with what is expected by the referring component. In general, not all versions of a component will work. This is the case even in the presence of type-checked interfaces, since interfaces never give a full specification of the observable behaviour of a component. Also, components often exhibit build-time variability, meaning that they can be built with or without certain optional features, or with other parameters selected at build time. Even worse, the component might be dependent on a specific compiler, or on specific compilation options being used for its dependencies (e.g., for Application Binary Interface (ABI) compatibility).  • Even if all required dependencies are present, our component still has to find them, in order to actually establish a concrete composition of components. This is often a rather labour-intensive part of the deployment process. Examples include setting up the dynamic linker search path on Unix systems [160], or the CLASSPATH in the Java environment.  • Components can depend on non-software artifacts, such as configuration files, user accounts, and so on. For instance, a component might keep state in a database that has to be initialised prior to its first use.  4
-1.1. Software deployment  • Components can require certain hardware characteristics, such as a specific processor type or a video card. These are somewhat outside the scope of software deployment, since we can at most check for such properties, not realise them if they are missing.  • Finally, deployment can be a distributed problem. A component can depend on other components running on remote machines or as separate processes on the same machine. For instance, a typical multi-tier web service consists of an HTTP server, a server implementing the business logic, and a database server, possibly all running on different machines.  So we have two problems in deployment: we must identify what our component’s requirements on the environment are, and we must somehow realise those requirements in the target environment. Realisation might consist of installing dependencies, creating or modifying configuration files, starting remote processes, and so on.  Manageability issues The second category is about our ability to properly manage the deployment process. There are all kinds of operations that we need to be able to perform, such as packaging, transferring, installing, upgrading, uninstalling, and answering various queries; i.e., we have to be able to support the evolution of a software system. All these operations require various bits of information, can be time-consuming, and if not done properly can lead to incorrect deployment. For example:  • When we uninstall a component, we have to know what steps to take to safely undo the installation, e.g., by deleting files and modifying configuration files. At the same time we must also take care never to remove any component still in use by some other part of the system.  • Likewise, when we perform a component upgrade, we should be careful not to overwrite any part of any component that might induce a failure in another part of the system. This is the well-known DLL hell, where upgrading or installing one application can cause a failure in another application due to shared dynamic libraries. It has been observed that software systems often suffer from the seemingly inexplicable phenomenon of “bit rot,” i.e., that applications that worked initially stop working over time due to changes in the environment [26].  • Administrators often want to perform queries such as “to what component does this file belong?”, “how much disk space will it take to install this component?”, “from what sources was this component built?”, and so on.  • Maintenance of a system means keeping the software up to date. There are many different policy choices that can be made. For instance, in a network, system administrators may want to push updates (such as security fixes) to all client machines periodically. On the other hand, if users are allowed to administer their own machines, it should be possible for them to select components individually.  • When we upgrade components, it is important to be able to undo, or roll back the effects of the upgrade, if the upgrade turns out to break important functionality. This  5
-1. Introduction  requires both that we remember what the old configuration was, and that we have some way to reproduce the old configuration.  • In heterogeneous networks (i.e., consisting of many different types of machines), or in small environments (e.g., a home computer), it is not easy to stay up to date with software updates. In particular in the case of security fixes this is an important problem. So we need to know what software is in use, whether updates are available, and whether such updates should be performed.  • Components can often be deployed in both source and binary form. Binary packages have to be built for each supported platform, and sometimes in several variants as well. For instance, the Linux kernel has thousands of build-time configuration options. This greatly increases the deployment effort, particularly if packaging and transfer of packages is a manual or semi-automatic process.  • Since components often have a huge amount of variability, we sometimes want to expose that variability to certain users. For instance, Linux distributors or system administrators typically want to make specific feature selections. A deployment system should support this.  1.2. The state of the art  Having seen some of the main issues in the field of software deployment, we now look at some representative deployment tools. This section does not aim to provide a full survey of the field; rather, the goal is to show the main approaches to deployment. Section 7.6 has a more complete discussion of related work. Package management is a perennial problem in the Unix community [2]. In fact, entire operating system distributions rise and fall on the basis of their deployment qualities. It can be argued that Gentoo Linux’s [77] quick adoption in the Linux community was entirely due to the perceived strengths of its package management system over those used by other distributions. This interest in deployment can be traced to Unix’s early adoption in large, advanced and often academic installations (in contrast to the single PC, single user focus in the PC industry in a bygone era). Also, for better or for worse, Unix systems have traditionally insisted on storing components in global namespaces in the file system such as the /usr/bin directory. This makes management tools indispensable. But more importantly, modern Unix components have fine-grained reuse, often having dozens of dependencies on other components. Since it is not desirable to use monolithic distribution (as is generally done in Windows and Mac OS X, as discussed below), a package management tool is absolutely required to support the resulting deployment complexity. Therefore Unix (and specifically, Linux) package management is what we will look at first.  RPM The most widely used Linux package management system is the Red Hat Package Manager (RPM) [62], and as it is a good, mature tool it is instructive to look at it in some detail. RPM is a low-level deployment tool: it installs and manages components, keeping meta-information about them to prevent unsafe upgrades or uninstalls.
-
-1.4. The Nix deployment system  This thesis describes the Nix deployment system, which overcomes the limitations of contemporary deployment tools described above. I describe the concepts and implementation (how it works), the underlying principles (why it works), our experiences and empirical validation (that it works), and the application areas to which it can be applied (where it works). The main idea of the Nix approach is to store software components in isolation from each other in a central component store, under path names that contain cryptographic hashes of all inputs involved in building the component, such as /nix/store/rwmfbhb2znwp...-firefox1.0.4. As I show in this thesis, this prevents undeclared dependencies and enables support for side-by-side existence of component versions and variants.  Availability At the time of writing, the Nix system is available as free software at the homepage of the TraCE project [161].  1.5. Contributions  The main contribution of this thesis is the development of a purely functional deployment model, which we implemented in the Nix system. In this model a binary component is uniquely defined by the declared inputs used to build the component. This enables arbitrary component instances to exist side by side. I show how such a model can be “retrofitted” onto existing software that was designed without such a model in mind. Concretely, the contributions of this thesis are the following.  • The cryptographic hashing scheme used by the Nix component store prevents undeclared dependencies, giving us complete deployment. Furthermore it provides support for side-by-side existence of component versions and variants.
-
-Isolation between components prevents interference.  • Users can install software independently from each other, without requiring mutual trust relations. Components that are common between users are shared, i.e., stored only once.  • Upgrades are atomic; there is no time window in which the system is in an inconsistent state.  • Nix supports O(1)-time rollbacks to previous configurations.  • Nix supports automatic garbage collection of unused components.  • The Nix component language describes not just how to build individual components, but also compositions. The language is a lazy, purely functional language. This is a good basis for a component composition language, as it allows dependencies and variability to be expressed in an elegant and flexible way.  • Nix has a transparent source/binary deployment model that marries the best parts of source deployment models such as the FreeBSD Ports Collection, and binary deployment models such as RPM. In essence, binary deployment is an automatic optimisation of source deployment.  • Nix is policy-free; it provides mechanisms to implement various deployment policies, but does not enforce a specific one. Some policies described in this thesis are channels (in push and pull variants), one-click installations, and pure source deployments.  • I show that a purely functional model supports efficient component upgrades despite the fact that a change to a fundamental component can propagate massively through the dependency graph.  • Nix supports distributed multi-platform builds in a transparent manner, i.e., a remote build is indistinguishable from a local build from the perspective of the user.  • Nix provides a good basis for the implementation of a build farm, which supports continuous integration and portability testing. I describe a Nix build farm that has greatly improved manageability over other build farms and is integrated with release management, that is, it builds concrete installable components that can be deployed directly through Nix.  • The use of Nix for software deployment extends naturally to the field of service deployment. Services are running processes that provide some useful facility to users, such as web servers. They consist of software components, static configuration and data, and mutable state. The first two aspects can be managed using Nix, and its advantages—such as rollbacks and side-by-side deployment—apply here as well.  • Though Nix is typically used to build large-grained components (i.e., traditional packages), it can also be used to build small-grained components such as individual source files. When used in this way it is a superior alternative to build managers  15 1. Introduction  such as Make [56], ensuring complete dependency specifications and enabling more sharing between builds.  The above may sound like a product feature list, which is not necessarily a good thing as it is always possible to add any feature to a system given enough ad-hockery. However, these contributions all follow from a small set of principles, foremost among them the purely functional model.
-
-2. An Overview of Nix  The previous chapter discussed the features that we require from a software deployment system, as well as the shortcomings of current technology. The subject of this thesis is the Nix deployment system, which addresses many of these problems. This chapter gives a gentle introduction to Nix from a user perspective (where “user” refers to component deployers as well as end-users). The succeeding parts of this thesis will present a more formal exposition of Nix’s semantics (Part II) and applications (Part III).  2.1. The Nix store  Nix is a system for software deployment. The term component will be used to denote the basic units of deployment. These are simply sets of files that implement some arbitrary functionality through an interface. In fact, Nix does not really care what a component actually is. As far as Nix is concerned a component is just a set of files in a file system. That is, we have a very weak notion of component, weaker even than the commonly used definition in [155]. (What we call a component typically corresponds to the ambiguous notion of a package in package management systems. Nix’s notion of components is discussed further in Section 3.1.) Nix stores components in a component store, also called the Nix store. The store is simply a designated directory in the file system, usually /nix/store. The entries in that directory are components (and some other auxiliary files discussed later). Each component is stored in isolation; no two components have the same file name in the store. A subset of a typical Nix store is shown in Figure 2.1. It contains a number of applications—GNU Hello 2.1.1 (a toy program that prints “Hello World”, Subversion 1.1.4 (a version management system), and Subversion 1.2.0—along with some of their dependencies. These components are not single files, but directory trees. For instance, Subversion consists of a directory called bin containing a program called svn, and a directory lib containing many more files belonging to the component. (For simplicity, many files and dependencies have been omitted from the example.) The arrows denote runtime dependencies between components, which will be described shortly. The notable feature in Figure 2.1 is the names of the components in the Nix store, such as /nix/store/bwacc7a5c5n3...-hello-2.1.1. The initial part of the file names, e.g., bwacc7a5c5n3..., is what gives Nix the ability to prevent undeclared dependencies and component interference. It is a representation of the cryptographic hash of all inputs involved in building the component.  Cryptographic hash functions are has
-2.5. Deployment models  What we have described above is not deployment—it is build management combined with local package management. The calls to nix-env build components locally, and construct user environments out of the build results. To perform actual software deployment, it is necessary to get the Nix expressions to the client machines. Nix in itself does not provide any specific way to do so. Rather, it provides the mechanisms to allow various deployment policies. The commands nix-instantiate and nix-store provide the fundamental mechanisms. (The command nix-env implemented on top of these already implements a bit of policy, namely, user environments.) Here are some examples of deployment models implemented and used in practice to distribute the Nix expressions of the Nix Packages collection:  • Manual download. A user can manually download releases of the Nix Packages collection as tar archives, unpack them, and apply nix-env to install components.  9In case the reader is wondering: the quite unnecessary dependency on linux-headers is through glibc; see Section 6.7. The dependency on gcc is entirely unnecessary and does not occur in the “production” version of Hello, which uses the utility patchelf (page 179) to prevent this retained dependency.  42 2.5. Deployment models  The downside to this approach is that it is rather laborious; in particular, it is not easy to stay up-to-date with new releases.  • Updating through a version management system. As a refinement to the previous model, the set of Nix expressions can be distributed through a version management system. For example, Nixpkgs can be obtained from its Subversion repository. After the initial checkout into a local working copy, staying up-to-date is a simple matter of running an update operation on the working copy. An added advantage is that it becomes easy to maintain local modifications to the Nix expressions.  • Channels. A more sophisticated model is the notion of channels. A channel is a URL that points to a tar archive of Nix expressions. A user can subscribe to a channel:
-
-### Ómicas
+### Ciencias Multiómicas
 
 Multiómicos se refiere a un enfoque de investigación que integra datos de múltiples disciplinas "ómicas" (como la genómica, proteómica, transcriptómica, etc.) para obtener una comprensión más completa y holística de un sistema biológico, enfermedad o proceso celular. Al combinar estos diferentes niveles moleculares, los estudios multiómicos permiten inferir mecanismos biológicos subyacentes de manera más precisa, desentrañar las causas de fenómenos complejos y descubrir biomarcadores. 
+
 Ómicas clave que se integran:
-Genómica: Estudio de los genes y su variación. 
-Transcriptómica: Estudio de los ARN mensajeros (ARNm) para entender la expresión génica. 
-Proteómica: Estudio de las proteínas, sus estructuras y funciones. 
-Metabolómica: Estudio de los metabolitos y cómo interactúan. 
-Epigenómica: Estudio de los cambios heredables en la expresión génica sin alterar la secuencia de ADN. 
-Microbioma: Estudio de las comunidades microbianas y su impacto en el huésped. 
-¿Por qué es importante la multiómica?
-Visión 360º de la biología: Proporciona una perspectiva más completa de un sistema biológico en lugar de solo estudiar componentes aislados. 
-Comprensión de enfermedades complejas: Ayuda a entender las bases moleculares de enfermedades complejas y a identificar biomarcadores para diagnósticos o terapias. 
-Integración de datos complejos: Permite integrar y analizar grandes volúmenes de datos generados por diferentes tecnologías de alto rendimiento. 
 
-### Next-Generation-Sequencing (NGS)
+- Genómica: Estudio de los genes y su variación. 
+- Transcriptómica: Estudio de los ARN mensajeros (ARNm) para entender la expresión génica. 
+- Proteómica: Estudio de las proteínas, sus estructuras y funciones. 
+- Metabolómica: Estudio de los metabolitos y cómo interactúan. 
+- Epigenómica: Estudio de los cambios heredables en la expresión génica sin alterar la secuencia de ADN. 
+- Microbioma: Estudio de las comunidades microbianas y su impacto en el huésped. 
 
-NGS bioinformatics uses computational tools, software, and algorithms to process and analyze the massive datasets generated by Next-Generation Sequencing (NGS). It involves cleaning and aligning millions of DNA or RNA fragments to reconstruct genomes or transcriptomes, identifying genetic variants like mutations, and annotating these variants to understand their biological significance. This analysis enables applications in personalized medicine, drug development, and understanding complex diseases by turning raw sequence data into actionable biological insights.  
-The Role of NGS Bioinformatics
-Data Processing: Raw sequence reads from NGS instruments are complex and need to be cleaned, aligned to a reference genome, and assembled to form longer sequences. 
-Variant Calling and Annotation: The process identifies genetic variations (such as single nucleotide polymorphisms or structural variations) and adds information about these variants' potential functions or links to disease. 
-Interpretation and Visualization: The analyzed data is presented in user-friendly formats like reports and visualizations, allowing researchers and clinicians to make informed decisions about treatments, disease diagnosis, and drug development. 
-Key Steps in the Workflow
-Library Preparation: DNA or RNA is fragmented and prepared for sequencing by adding sequencing adapters. 
-Sequencing: The prepared samples are run on high-throughput sequencing machines to generate millions of short reads. 
-Primary Analysis: Raw sequence data is converted into FASTQ files, which contain sequence data and quality scores. 
-Secondary Analysis: Reads are aligned to a reference genome, and variants are identified and annotated. 
-Tertiary Analysis: The identified variants are interpreted for their potential impact on biological pathways and phenotypes, often by querying genomic databases. 
-Applications
-Personalized Medicine: Identifying genetic predispositions to diseases and tailoring treatments based on an individual's genetic makeup. 
-Cancer Research: Identifying mutations in tumors to guide cancer treatment strategies and monitor treatment responses. 
-Infectious Disease: Tracking outbreaks by sequencing pathogens and understanding their genetic relationships. 
-Drug Discovery: Uncovering new drug targets and identifying potential drug repurposing opportunities by understanding disease-causing genetic mechanisms. 
 
-### 1. El Paradigma de la Investigación Reproducible
+### El Paradigma de la Investigación Reproducible
 
-Estos artículos establecen el marco conceptual y la necesidad urgente de la reproducibilidad computacional en las ciencias, particularmente en ecología y evolución.
+> Establecer el marco conceptual y la necesidad urgente de la reproducibilidad computacional en las ciencias, particularmente en ecología y evolución.
 
-* **Referencia Clave:**
-    > Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017). Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+[@noble2009]: The core guiding principle is simple: Someone unfamiliar with your project should be able to look at your computer files and understand in detail what you did and why. This ‘‘someone’’ could be any.
 
-    **Relevancia para su reporte:** Este es un artículo fundamental y muy accesible. Justifica la necesidad de prácticas como la automatización de flujos de trabajo (lo que usted hace con `Make` y `{targets}`) y el seguimiento de versiones del software (lo que logra con `Nix`). Puede citarlo para argumentar que su metodología no es una complejidad innecesaria, sino una adhesión a las "buenas prácticas" recomendadas por la comunidad científica para evitar errores y asegurar la longevidad de los resultados.
+[@dolstra2006]: The development of principles and tools to support the deployment process has largely been relegated to industry, system administrators, and Unix hackers. This has resulted in a large number of often ad hoc tools that typically automate manual practices but do not address fundamental issues in a systematic and disciplined way. This is evidenced by the huge number of mailing list and forum postings about deployment failures, ranging from applications not working due to missing dependencies, to subtle malfunctions caused by incompatible components. Deployment problems also seem curiously resistant to automation: the same concrete problems appear time and again. Deployment is especially difficult in heavily component-based systems—such as Unix-based open source software—because the effort of dealing with the dependencies can increase super-linearly with each additional dependency. This work describes a system for software deployment called Nix (trough '{rix}-r package') that addresses many of the problems that plague existing deployment systems.
 
-* **Referencia Específica al Campo:**
-    > Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging data analytical work reproducibly with R. *The American Statistician*, 72(1), 80-88.
+[@wilson2017]: Este artículo Justifica la necesidad de prácticas como la automatización de flujos de trabajo (e este proyecto usamos herramientas como `Make` y `{targets}`) y el seguimiento de versiones del software (lo que logra con `Nix`). Argumentar que su metodología no es una complejidad innecesaria, sino una adhesión a las "buenas prácticas" recomendadas por la comunidad científica para evitar errores y asegurar la longevidad de los resultados.
 
-    **Relevancia para su reporte:** Este artículo aborda directamente el ecosistema de R. Explica cómo empaquetar un proyecto de análisis de datos (código, datos y el ambiente computacional) para hacerlo reproducible. Proporciona el argumento académico perfecto para justificar por qué usar una herramienta como `Nix` (a través de `rix`) es una solución superior a simplemente listar los paquetes, ya que captura el estado completo del sistema.
+[@marwick2018]: Este artículo aborda directamente el ecosistema de R. Explica cómo empaquetar un proyecto de análisis de datos (código, datos y el ambiente computacional) para hacerlo reproducible. Proporciona el argumento académico perfecto para justificar por qué usar una herramienta como `Nix` (a través de `rix`) es una solución superior a simplemente listar los paquetes, ya que captura el estado completo del sistema.
 
-### 2. Gestión del Ambiente Computacional con Nix
+### Gestión del Ambiente Computacional con Nix
 
 Estas referencias validan el uso de gestores de ambientes declarativos como Nix para garantizar la reproducibilidad a nivel de software.
 
-* **Referencia Técnica y Conceptual:**
-    > Dolstra, E. (2006). *The purely functional software deployment model*. (Tesis Doctoral, Utrecht University).
+[@dolstra2006]: Esta es la fuente original que describe el modelo detrás de Nix. Es una referencia más técnica, pero citarla demuestra un profundo entendimiento de los fundamentos de su flujo de trabajo. Puede usarla para afirmar que su proyecto se basa en un "modelo puramente funcional" que garantiza la construcción de ambientes computacionales determinísticos, eliminando problemas comunes como el "funciona en mi máquina".
 
-    **Relevancia para su reporte:** Esta es la fuente original que describe el modelo detrás de Nix. Es una referencia más técnica, pero citarla demuestra un profundo entendimiento de los fundamentos de su flujo de trabajo. Puede usarla para afirmar que su proyecto se basa en un "modelo puramente funcional" que garantiza la construcción de ambientes computacionales determinísticos, eliminando problemas comunes como el "funciona en mi máquina".
+Abogar por herramientas como Nix para resolver la "crisis de reproducibilidad" en campos computacionalmente intensivos. Citar este artículo le permite establecer un paralelismo, argumentando que, al igual que en la neurociencia, la complejidad del análisis de datos genómicos, espaciales y taxonómicos en la conservación marina exige soluciones de reproducibilidad robustas.
 
-* **Referencia Práctica en Ciencia:**
-    > Gronenschild, E. H., & K. P. Körding. (2021). A faster, more reproducible, and more integrative future for neuroscience. *Neuron*, 109(20), 3185-3187.
-
-    **Relevancia para su reporte:** Aunque el campo es la neurociencia, el argumento es universal y aplicable a la biología marina. Los autores abogan por herramientas como Nix para resolver la "crisis de reproducibilidad" en campos computacionalmente intensivos. Citar este artículo le permite establecer un paralelismo, argumentando que, al igual que en la neurociencia, la complejidad del análisis de datos genómicos, espaciales y taxonómicos en la conservación marina exige soluciones de reproducibilidad robustas.
-
-### 3. Automatización de Pipelines con `{targets}`
+### Automatización de Pipelines con `{targets}`
 
 La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. `{targets}` es el estándar moderno en el ecosistema R.
 
-* **Referencia del Software:**
-    > Landau, W. M. (2021). The targets R package: a dynamic Make-like function-oriented pipeline toolkit for reproducibility and high-performance computing. *Journal of Open Source Software*, 6(57), 2959.
+[@landau2021]: Esta es la cita oficial y directa del paquete `{targets}`. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.
 
-    **Relevancia para su reporte:** Esta es la cita oficial y directa del paquete `{targets}`. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.
+[@noble2009]: A few months from now, you may not remember what you were up to when you created a particular set of files, or you may not remember what you drew. You will either have to then spend time reconstructing your previous experiments or lose whatever insights you gained from those experiments.
 
-### 4. Orquestación del Flujo de Trabajo con `Make`
+[@noble2009]: it is important to handle long-running scrips and its outputs. The final line of a runall script calls summarize, which in turn creates a plot, table, or HTML page that summarizes the results of the experiment (in our case, we use quarto for this). The summarize script is written in such a way that it can interpret a partially completed experiment, showing how much of the computation has been performed thus far.
+
+### Orquestación del Flujo de Trabajo con `Make`
 
 El uso de `Make` como un "orquestador" de alto nivel simplifica la interacción y estandariza los procedimientos.
 
-* **Referencia Clásica sobre la Práctica:**
-    > Noble, W. S. (2009). A quick guide to organizing computational biology projects. *PLOS Computational Biology*, 5(7), e1000424.
-
-    **Relevancia para su reporte:** Este influyente artículo describe las mejores prácticas para organizar proyectos de biología computacional. Recomienda explícitamente el uso de `Make` para automatizar la pipeline, desde la descarga de datos hasta la generación de figuras finales. Citarlo posiciona su uso de `Makefile` como una práctica establecida y recomendada para mantener la organización, la claridad y la automatización en proyectos complejos, lo cual es vital en estudios integrativos de biodiversidad marina.
-
-### Cómo Integrar Estas Referencias en su Reporte
-
-Puede estructurar una sección de "Metodología Computacional" o "Flujo de Trabajo Reproducible" en su reporte. Comience estableciendo la importancia de la reproducibilidad en la ciencia de la conservación, citando a **Wilson et al. (2017)**. Luego, describa su flujo de trabajo como una implementación de estos principios, detallando cada componente:
-
-1.  **Orquestación:** Explique que utiliza `Make` como punto de entrada estandarizado, siguiendo las recomendaciones de **Noble (2009)**.
-2.  **Gestión del Ambiente:** Describa cómo `rix` y `Nix` garantizan un ambiente idéntico, abordando los problemas discutidos por **Marwick et al. (2018)** y basándose en los principios de **Dolstra (2006)**.
-3.  **Pipeline de Análisis:** Introduzca `{targets}` como su motor de pipeline, citando a **Landau (2021)**, y explique cómo asegura que sus resultados estén siempre sincronizados con sus datos y código.
-
-Al hacer esto, no solo presenta sus resultados, sino que también demuestra que han sido generados mediante un proceso metodológicamente sólido, transparente y verificable, aumentando significativamente el impacto y la credibilidad de su investigación.
-
-### Objetivos
-
-1. **Integrar datos de ocurrencia** de múltiples fuentes (OBIS, GBIF)
-2. **Validar y limpiar** coordenadas geográficas usando métodos estandarizados
-3. **Analizar patrones espaciales** de distribución de especies marinas
-4. **Modelar idoneidad de hábitat** considerando variables ambientales
-5. **Generar recomendaciones** para conservación basadas en evidencia
-
-## Metodología
-
-### Sujetos Experimentales
-
-```{r}
-#| label: executive-summary
-#| results: asis
-
-if (safe_check("pipeline_report")) {
-  cat("**Especies analizadas:** ", length(pipeline_report$species_analyzed), "\n\n")
-  cat("**Registros procesados:** ", pipeline_report$data_acquisition$cleaned_records, "\n\n")
-  cat("**Estado del pipeline:** ", pipeline_report$pipeline_status, "\n\n")
-  cat("**Fecha de análisis:** ", format(pipeline_report$pipeline_completion_date, "%d/%m/%Y"), "\n\n")
-} else {
-  cat("⚠️ **Pipeline en progreso o no completado**\n\n")
-  cat("Para generar este reporte completo, primero ejecuta:\n\n")
-  cat("```r\n")
-  cat("library(targets)\n")
-  cat("tar_make()\n")
-  cat("```\n\n")
-}
-```
-
-## Species Analyzed
-
-```{r species-list}
-species_list <- c(
-  "Acropora cervicornis",
-  "Acropora palmata",
-  "Porites astreoides"
-)
-
-kable(data.frame(
-  "Species" = species_list,
-  "Common Name" = c("Staghorn Coral", "Elkhorn Coral", "Mustard Hill Coral")
-), caption = "Target Species for Genomic Analysis") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
-```
-
-
-::: {.callout-note}
-'direnv: error /home/santi/Projects/NereidaPipeline/.envrc is blocked. Run `direnv allow` to approve its content'
-:::
-
-Usted ha combinado tres herramientas clave de manera muy efectiva: Make como orquestador, Nix (a través de rix) como gestor del ambiente computacional y {targets} para la gestión de la pipeline de análisis.
+[@noble2009]: Este influyente artículo describe las mejores prácticas para organizar proyectos de biología computacional. Recomienda explícitamente el uso de `Make` para automatizar la pipeline, desde la descarga de datos hasta la generación de figuras finales. Citarlo posiciona su uso de `Makefile` como una práctica establecida y recomendada para mantener la organización, la claridad y la automatización en proyectos complejos, lo cual es vital en estudios integrativos de biodiversidad marina.
 
 ::: {.callout-note  title="Makefile"}
 
@@ -427,38 +215,77 @@ Así es como su Makefile dirige el flujo:
 
 :::
 
-✅ Reproducibilidad (Fortaleza Mayor)
+### Control de versiones
 
-Este es el punto más fuerte de su sistema. Al definir el entorno computacional de forma declarativa con rix en build_env.R y materializarlo con Nix, ha eliminado prácticamente la variabilidad del entorno. Cualquier investigador, en cualquier máquina con Nix, puede ejecutar make regenerate y nix-shell para recrear un ambiente de software bit a bit idéntico. Esto es el estándar de oro para la reproducibilidad computacional.
+Este trabajo usa una estructura estándar para organización de trabajos bioinformáticos [@noble2009]: top-level organization that is logical, with chronological organization at the next level, and logical organization below that. A sample project, called msms, is shown in Figure 1. At the root of most of my projects, I have a data directory for storing fixed data sets, a results directory for tracking computational experiments peformed on that data, a doc directory with one subdirectory per manuscript, and directories such as src for source code and bin for compiled binaries or scripts.
 
-✅ Facilidad de Uso y Mantenimiento (Fortaleza)
+[@noble2009]: Record every operation that you perform. 2. Comment generously. . Avoid editing intermediate files by hand. Use relative pathnames to access other files within the same project. perhaps most significantly, version control is invaluable for collaborative projects. The repository allows collaborators to work simultaneously on a collection of files, including scripts, documentation, or a draft manuscript. If two individuals edit the same file in parallel, then the version control software will automatically merge the two versions and flag lines that were edited by both people.
 
-El Makefile es la clave aquí. Proporciona una "API" de línea de comandos simple y legible para su proyecto. Un nuevo colaborador no necesita entender los detalles de Nix o los scripts de shell; solo necesita leer la salida de make help para empezar a trabajar. Esto reduce drásticamente la curva de aprendizaje y los posibles errores.
+> version control should only be used for files that you edit by hand. Automatically generated files, whether they are compiled programs or the results of a computational experiment, do not belong under version control [@noble2009].
 
-📈 Escalabilidad (Fortaleza con un área de mejora)
+[@boyle2009]: changes in software engineering and design include: the methodology through which software is constructed (e.g. components leading to frameworks, and frameworks leading to aspects [1]); the technology used to allow for distributed computing (e.g. object brokers evolving pass-byvalue mechanisms, and these being replaced by stateless Web Services); and the ideology that is used to define the process through which software is built (e.g. the "rational" processes being replaced by agile programming).
 
-    Fortaleza: El uso de {targets} es ideal para la escalabilidad del análisis. Su naturaleza basada en dependencias garantiza que solo se recalculen los pasos necesarios, ahorrando un tiempo de cómputo inmenso a medida que el análisis crece en complejidad.
+[@boyle2009]: **Layered content management**: To manage data arising from ongoing research experiments we adopted an approach using distributed content repositories. Content repositories allow for the development of a formalized structure that can be associated directly with resources. Easy to adapt. Within a research environment it is generally difficult to hammer down requirements. The requirements change over time, and new functionality is often required at short notice. Easy to understand. Any data management solution will involve a high level of complexity, especially in a distributed research environment. Easy to access. Within a research environment there is little time to be spared for learning (largely transient) informatics systems. • Instrumentation Layer. This layer is used to capture experimental information. The layer models information in a way that makes storage of the information simpler, so that laboratory scientists can easily add and annotate information that is captured from a variety of instruments. • Conceptual Layer. This layer is designed to provide a means to generically interact with the information through the use of high level abstract operations. These operations include the aggregation and retrieval of information, and do not necessitate an understanding of the actual information content. • Organizational Layer. This layer provides a project (or researcher) based view on the information, and therefore is designed to have a "biological focus". Typically the content is organized by factors such as disease, organism or molecule. Each different research, or research group, can individually organize and annotate the data to suit their individual requirements.
 
-    Área de Mejora: La principal fricción a futuro es el acoplamiento manual entre _targets.R y build_env.R. Actualmente, si usted añade library(nuevo_paquete) en su pipeline _targets.R, debe recordar manualmente añadir "nuevo_paquete" al vector targets_packages en build_env.R. A medida que el proyecto crezca y colaboren más personas, es casi seguro que este paso se olvidará, lo que provocará fallos en las pruebas (make test) y frustración.
+### Generación de reportes técnicos con Quarto
 
-Recomendación para Optimizar la Escalabilidad
+[@noble2009]:In addition, the need to make results accessible to and understandable by wet lab biologists may have practical implications for how a project is managed. For example, to make the results more understandable, significant effort may need to go into the prose descriptions of experiments in the lab notebook, rather than simply including a figure or table with a few lines of text summarizing the major conclusion. More practically, differences in operating systems and software may cause logistical difficulties. For example, computer scientists may prefer to write their documents in the LaTeX typesetting language, whereas biologists may prefer Microsoft Word.
 
-Para que este flujo de trabajo sea verdaderamente a prueba de futuro, el siguiente paso lógico es automatizar la sincronización de paquetes.
+### Uso de bases de datos
 
-Se podría modificar el script regenerate.sh (o crear uno nuevo) para que, antes de ejecutar build_env.R, primero analice el archivo _targets.R en busca de todas las llamadas library(...). Luego, puede pasar esa lista de paquetes como un argumento a su script de R o escribirla en un archivo temporal que build_env.R pueda leer.
+[@boyle2009]: database based solutions to open, distributed, interoperable data management solutions (see Figure 1). This change has been driven by demands for rapid development, high levels of interoperability and increases in data volume and complexity.
 
-Esto desacoplaría completamente la definición del ambiente de la pipeline, adhiriéndose al principio de "Fuente Única de Verdad" (Single Source of Truth). Su pipeline en _targets.R se convierte en la única fuente que define qué paquetes se necesitan, y el resto del sistema reacciona automáticamente.
+[@boyle2009]: **aggregation subsystem*: One of the aims of the computing advances over the last few years has involved the concept of run time aggregation. This approach is epitomized by the semantic web, where people can mash information from a variety of data sources into a single graph. When an analysis run has finished, the observing aggregation system can trigger an indexing operation on the results. The indexing is controlled using the properties that are associated with the output of the analysis run (typically the properties related to the rows or columns that are to be indexed).
 
-En conclusión, su arquitectura actual es excelente, avanzada y se adelanta a la mayoría de los flujos de trabajo académicos. Es altamente reproducible y fácil de usar. Al implementar la sincronización automática de paquetes, lo convertirá en un sistema prácticamente infalible y listo para escalar a cualquier complejidad.
+> For this last point... we could try a quarto dashboard to summirize the data and make the github actions trigger to continuously (or at query) deploys updated info to the web.
 
+### Error handling
+
+[@noble2009]: During the development of a complicated set of experiments, you will introduce errors into your code. Such errors are inevitable, but they are particularly problematic if they are difficult to track down or, worse, if you don’t know about them and hence draw invalid conclusions from your experiment. Here are three suggestions for error handling. Write robust code to detect errors.
+
+::: {.callout-note}
+'direnv: error /home/santi/Projects/NereidaPipeline/.envrc is blocked. Run `direnv allow` to approve its content'
+:::
+
+
+## Objetivos
+
+1. **Integrar datos de ocurrencia** de múltiples fuentes (OBIS, GBIF)
+2. **Validar y limpiar** coordenadas geográficas usando métodos estandarizados
+3. **Analizar patrones espaciales** de distribución de especies marinas
+4. **Modelar idoneidad de hábitat** considerando variables ambientales
+5. **Generar recomendaciones** para conservación basadas en evidencia
+
+## Planteamiento del problema
+
+¿Por qué es importante la multiómica? Proporciona una perspectiva más completa de un sistema biológico en lugar de solo estudiar componentes aislados. Sin embargo, es la Integración de datos complejos, los cuales Permiten integrar y analizar grandes volúmenes de datos generados por diferentes tecnologías de alto rendimiento, no suele ser un paso sencillo.
+
+For example, Next-Generation-Sequencing (NGS) bioinformatics uses computational tools, software, and algorithms to process and analyze the massive datasets generated by Next-Generation Sequencing (NGS). It involves cleaning and aligning millions of DNA or RNA fragments to reconstruct genomes or transcriptomes, identifying genetic variants like mutations, and annotating these variants to understand their biological significance. It is essential to consider: Data Processing: Raw sequence reads from NGS instruments are complex and need to be cleaned, aligned to a reference genome, and assembled to form longer sequences. Variant Calling and Annotation: The process identifies genetic variations (such as single nucleotide polymorphisms or structural variations) and adds information about these variants' potential functions or links to disease. Interpretation and Visualization: The analyzed data is presented in user-friendly formats like reports and visualizations, allowing researchers and clinicians to make informed decisions. 
+
+[@dolstra2006]: Software deployment is the problem of managing the distribution of software to end-user machines. That is, a developer has created some piece of software, and this ultimately has to end up on the machines of end-users. After the initial installation of the software, it might need to be upgraded or uninstalled. Presumably, the developer has tested the software and found it to work sufficiently well, so the challenge is to make sure that the software works just as well, i.e., the same, on the end-user machines. I will informally refer to this as correct deployment: given identical inputs, the software should behave the same on an end-user machine as on the developer machine1. This should be a simple problem. For instance, if the software consists of a set of files, then deployment should be a simple matter of copying those to the target machines. In practice, deployment turns out to be much harder. This has a number of causes. These fall into two broad categories: environment issues and manageability issues. Even worse, the component might be dependent on a specific compiler, or on specific compilation options being used for its dependencies. This is often a rather labour-intensive part of the deployment process. 
+
+[@dolstra2006]: the Nix deployment system, which overcomes the limitations of contemporary deployment tools described above. It solves implementation (how it works), the underlying principles (why it works), our experiences and empirical validation (that it works), and the application areas to which it can be applied (where it works).
+
+
+
+
+## Metodología
+
+### Preparación de librerías
+
+DNA or RNA is fragmented and prepared for sequencing by adding sequencing adapters.
+
+Sequencing: The prepared samples are run on high-throughput sequencing machines to generate millions of short reads.
+
+Primary Analysis: Raw sequence data is converted into FASTQ files, which contain sequence data and quality scores. 
+
+Secondary Analysis: Reads are aligned to a reference genome, and variants are identified and annotated. 
+
+Tertiary Analysis: The identified variants are interpreted for their potential impact on biological pathways and phenotypes, often by querying genomic databases. 
 
 ### Crear el ambiente con Nix
 
-La implementación de avanzadas herramientas bioinformáticas y la gestión eficiente de pipelines han revolucionado el estudio de la biodiversidad y la evolución de la biota marina. En este marco, el proyecto propone una aplicación de R que hace uso de Nix por medio del paquete R {rix}, convergiendo en una solución óptima para el manejo de diversas funciones, incluyendo el procesamiento de datos, la gestión de código y la integración de información en repositorios.
-
-Nix es un sistema de paquetes de código abierto que adopta una nueva manera de manejar las dependencias, proporcionando un entorno de trabajo coherentemente reproducible. Asegura que los paquetes se construyen e instalan de manera aislada, lo que permite un control de versiones y una gestión de las dependencias finamente afinada (Dolstra, E., 2006). Así, Nix se impone como una herramienta fundamental cambio de contextos académicos y empresariales, permitiendo la creación de entornos de trabajo estables y reproducibles.
-
-El paquete R {rix}, en línea con este enfoque, permite una integración simplificada de Nix en la plataforma R. Esto significa que las dependencias de R, del sistema y el control de versiones pueden ser gestionados de forma centralizada a través de Nix. La inclusión de {rix} en este proyecto permite el manejo eficiente de las dependencias de R de manera reproducible (Gabay et al., 2019).
+El paquete R {rix} 'r library(rix)', en línea con este enfoque, permite una integración simplificada de Nix en la plataforma R. Esto significa que las dependencias de R, del sistema y el control de versiones pueden ser gestionados de forma centralizada a través de Nix. La inclusión de {rix} en este proyecto permite el manejo eficiente de las dependencias de R de manera reproducible (Gabay et al., 2019).
 
 En conclusión, la fundamentación del proyecto en la integración de R, Nix y el paquete {rix} se traduce en una robustez y una gestión optimizada de las dependencias, facilitando notablemente el procesamiento y el análisis de datos y el manejo de código. Además, permite la integración eficiente de información en repositorios y proporciona un entorno de trabajo reproducible, lo cual es vital para mantener la validez y la replicabilidad de las investigaciones científicas.
 
@@ -466,7 +293,7 @@ En conclusión, la fundamentación del proyecto en la integración de R, Nix y e
 
 El archivo 'regenerate.sh' ejecuta 'build_env.R' utilizando 'rix' de 'nixpkgs'.
 
-El ambiente (software, dependencias del sistema, librerías, etc.)pipeline se controla con el archivo 'build_env.R', el cuál se sincroniza con '_targets.R', el cuál controla pipeline, tomando las funciones guardadas en './R/*.r' y el reporte técnico en './reportes/'
+
 
 ::: {.callout-tip title="Flujo de Trabajo Recomendado"}
 
@@ -961,6 +788,149 @@ Integration with occurrence data - Link genomic data with the spatial occurrence
 
 ## Resultados
 
+El ambiente (software, dependencias del sistema, librerías, etc.) se controla con el archivo '[build_env.R](https://github.com/santi-rios/NereidaPipeline/blob/main/build_env.R)'. el cuál facilita la ejecución de distintas tareas controladas por los scripts del directorio '[scripts/](https://github.com/santi-rios/NereidaPipeline/tree/main/scripts/)'
+
+La pipline es controlada con el archivo '[_targets.R](https://github.com/santi-rios/NereidaPipeline/blob/main/_targets.R)', el cual controla el flujo utilizando diversas funciones escritas en el direcotio '[R/](https://github.com/santi-rios/NereidaPipeline/tree/main/R)':
+
+- '[R/data_acquisition.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/data_acquisition.R)': Integrating OBIS, GBIF, biomaRt, wikitaxa, and PRISM for comprehensive data collection.
+- '[R/data_cleaning.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/data_cleaning.R)': Standardizing and validating marine occurrence records from biological collection databases.
+- '[R/data_visualization.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/data_visualization.R)'
+- '[R/database_integration.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/database_integration.R)': Efficient storage and querying of heterogeneous marine biodiversity data.
+- '[R/evolutionary_analysis.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/evolutionary_analysis.R)': phylostratigraphic analysis and evolutionary studies in marine organisms.
+- '[R/geospatial_processing.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/geospatial_processing.R)': For handling marine occurrence data with spatial coordinates and environmental layers.
+- '[R/metagenomic_analysis.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/metagenomic_analysis.R)'
+- '[R/taxonomic_management.R](https://github.com/santi-rios/NereidaPipeline/blob/main/R/taxonomic_management.R)': standardized handling of marine biodiversity taxonomic information.
+
+### Sujetos Experimentales
+
+```{r}
+#| label: executive-summary
+#| results: asis
+
+if (safe_check("pipeline_report")) {
+  cat("**Especies analizadas:** ", length(pipeline_report$species_analyzed), "\n\n")
+  cat("**Registros procesados:** ", pipeline_report$data_acquisition$cleaned_records, "\n\n")
+  cat("**Estado del pipeline:** ", pipeline_report$pipeline_status, "\n\n")
+  cat("**Fecha de análisis:** ", format(pipeline_report$pipeline_completion_date, "%d/%m/%Y"), "\n\n")
+} else {
+  cat("⚠️ **Pipeline en progreso o no completado**\n\n")
+  cat("Para generar este reporte completo, primero ejecuta:\n\n")
+  cat("```r\n")
+  cat("library(targets)\n")
+  cat("tar_make()\n")
+  cat("```\n\n")
+}
+```
+
+Species Analyzed
+
+```{r species-list}
+species_list <- c(
+  "Acropora cervicornis",
+  "Acropora palmata",
+  "Porites astreoides"
+)
+
+kable(data.frame(
+  "Species" = species_list,
+  "Common Name" = c("Staghorn Coral", "Elkhorn Coral", "Mustard Hill Coral")
+), caption = "Target Species for Genomic Analysis") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+
+
+### Datos disponibles
+
+```{r}
+#| label: data-overview
+
+# Create overview of available data
+data_overview <- data.frame(
+  Objeto = names(loaded_targets),
+  Disponible = sapply(loaded_targets, function(x) if(x) "Sí" else "No"),
+  Tipo = sapply(names(loaded_targets), function(name) {
+    if (loaded_targets[[name]] && exists(name)) {
+      obj <- get(name)
+      if (is.data.frame(obj)) {
+        paste("data.frame (", nrow(obj), " filas)")
+      } else if (is.list(obj)) {
+        paste("lista (", length(obj), " elementos)")
+      } else {
+        class(obj)[1]
+      }
+    } else {
+      "No disponible"
+    }
+  })
+)
+
+kable(
+  data_overview,
+  caption = "Resumen de objetos del pipeline",
+  format = "html"
+) 
+# |>
+#   kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Análisis de Datos de Ocurrencia
+
+```{r}
+#| label: occurrence-analysis
+
+if (safe_check("cleaned_occurrences")) {
+  
+  # Basic summary
+  cat("### Resumen de Datos Limpios\n\n")
+  cat("- **Total de registros:** ", nrow(cleaned_occurrences), "\n")
+  cat("- **Especies únicas:** ", length(unique(cleaned_occurrences$scientificName)), "\n")
+  cat("- **Rango temporal:** ", min(cleaned_occurrences$year, na.rm = TRUE), "-", 
+      max(cleaned_occurrences$year, na.rm = TRUE), "\n\n")
+  
+  # Species summary
+  species_summary <- cleaned_occurrences |>
+    group_by(scientificName) |>
+    summarise(
+      Registros = n(),
+      `Años únicos` = length(unique(year[!is.na(year)])),
+      `Lat mín` = round(min(decimalLatitude, na.rm = TRUE), 2),
+      `Lat máx` = round(max(decimalLatitude, na.rm = TRUE), 2),
+      `Lon mín` = round(min(decimalLongitude, na.rm = TRUE), 2),
+      `Lon máx` = round(max(decimalLongitude, na.rm = TRUE), 2),
+      .groups = "drop"
+    )
+  
+  kable(
+    species_summary,
+    caption = "Resumen por especie",
+    format = "html"
+  ) 
+  # |>
+  #   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+  
+} else {
+  cat("⚠️ Datos de ocurrencia no disponibles. Ejecuta el pipeline primero.\n")
+}
+```
+
+
+Summary by Species and Data Type
+
+```{r retrieval-summary}
+if (!is.null(genomic_quality)) {
+  kable(genomic_quality, 
+        caption = "Genomic data retrieval summary",
+        digits = 2) %>%
+    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    column_spec(2, bold = TRUE) %>%
+    column_spec(3, color = ifelse(genomic_quality$data_completeness == 100, 
+                                   "green", "orange"))
+}
+```
+
+
+
 ### Datos Ómicos
 
 Se encontraron estas especies en las bases de datos 
@@ -1005,8 +975,158 @@ if (!is.null(genome_availability)) {
 }
 ```
 
-### Resumen por especies y tipo de datos
+#### Resumen por especies y tipo de datos
 
+Data Completeness Visualization
+
+```{r completeness-viz, fig.width=10, fig.height=6}
+if (!is.null(genomic_quality)) {
+  # Reshape data for plotting
+  plot_data <- genomic_quality %>%
+    tidyr::pivot_longer(
+      cols = c(proteome_available, cds_available, gff_available),
+      names_to = "data_type",
+      values_to = "available"
+    ) %>%
+    mutate(
+      data_type = gsub("_available", "", data_type),
+      data_type = tools::toTitleCase(data_type)
+    )
+  
+  ggplot(plot_data, aes(x = species, y = data_type, fill = available)) +
+    geom_tile(color = "white", size = 1) +
+    scale_fill_manual(
+      values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c"),
+      labels = c("TRUE" = "Available", "FALSE" = "Not Available")
+    ) +
+    labs(
+      title = "Genomic Data Retrieval Status",
+      subtitle = "Data types retrieved for each species",
+      x = "Species",
+      y = "Data Type",
+      fill = "Status"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
+      axis.text.y = element_text(size = 11),
+      plot.title = element_text(face = "bold", size = 16),
+      plot.subtitle = element_text(size = 12),
+      legend.position = "bottom"
+    )
+}
+```
+
+#### Data Size Statistics
+
+```{r data-sizes}
+if (!is.null(genomic_quality)) {
+  size_data <- genomic_quality %>%
+    filter(!is.na(proteome_size)) %>%
+    select(species, proteome_size, cds_count)
+  
+  if (nrow(size_data) > 0) {
+    kable(size_data,
+          col.names = c("Species", "Proteome Size (MB)", "CDS Count"),
+          caption = "Downloaded data statistics",
+          digits = 2) %>%
+      kable_styling(bootstrap_options = c("striped", "hover"))
+  }
+}
+```
+
+#### Successfully Retrieved Data
+
+```{r successful-retrievals}
+if (!is.null(genomic_sequences)) {
+  successful <- data.frame(
+    species = character(),
+    database = character(),
+    data_type = character(),
+    file_path = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (sp_name in names(genomic_sequences)) {
+    if (sp_name == "availability" || sp_name == "retrieval_date" || 
+        sp_name == "database") next
+    
+    sp_data <- genomic_sequences[[sp_name]]
+    
+    for (dtype in c("proteome", "cds", "gff")) {
+      if (!is.null(sp_data[[dtype]]) && sp_data[[dtype]]$status == "success") {
+        successful <- rbind(successful, data.frame(
+          species = sp_name,
+          database = sp_data$database_used,
+          data_type = dtype,
+          file_path = basename(sp_data[[dtype]]$file),
+          stringsAsFactors = FALSE
+        ))
+      }
+    }
+  }
+  
+  if (nrow(successful) > 0) {
+    kable(successful,
+          caption = "Successfully retrieved genomic data files") %>%
+      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+      column_spec(3, bold = TRUE, color = "#27ae60")
+  } else {
+    cat("No data successfully retrieved.\n")
+  }
+}
+```
+
+#### Data Not Found
+
+```{r failed-retrievals}
+if (!is.null(genomic_sequences)) {
+  failed <- data.frame(
+    species = character(),
+    data_type = character(),
+    reason = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (sp_name in names(genomic_sequences)) {
+    if (sp_name == "availability" || sp_name == "retrieval_date" || 
+        sp_name == "database") next
+    
+    sp_data <- genomic_sequences[[sp_name]]
+    
+    # Check if species was not available at all
+    if (!is.null(sp_data$status) && sp_data$status == "not_available") {
+      failed <- rbind(failed, data.frame(
+        species = sp_name,
+        data_type = "All",
+        reason = "Species not found in any database",
+        stringsAsFactors = FALSE
+      ))
+      next
+    }
+    
+    for (dtype in c("proteome", "cds", "gff")) {
+      if (!is.null(sp_data[[dtype]]) && sp_data[[dtype]]$status == "error") {
+        failed <- rbind(failed, data.frame(
+          species = sp_name,
+          data_type = dtype,
+          reason = sp_data[[dtype]]$message,
+          stringsAsFactors = FALSE
+        ))
+      }
+    }
+  }
+  
+  if (nrow(failed) > 0) {
+    kable(failed,
+          caption = "Data retrieval failures") %>%
+      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+      column_spec(2, color = "#e74c3c")
+  } else {
+    cat("✓ All requested data successfully retrieved!\n")
+  }
+}
+```
 
 
 ### Distribución Espacial de Especies
@@ -1534,6 +1654,30 @@ Este enfoque metodológico puede replicarse para otras regiones y grupos taxonó
 
 ---
 
+## Resumen Ejecutivo
+
+### Estado del pipeline
+
+```{r}
+#| label: pipeline-status
+#| echo: true
+
+# Show pipeline status
+cat("Estado de los objetos del pipeline:\n\n")
+for (target in names(loaded_targets)) {
+  status <- if (loaded_targets[[target]]) "✓ Disponible" else "✗ No disponible"
+  cat("-", target, ":", status, "\n")
+}
+
+# Check targets status
+if (requireNamespace("targets", quietly = TRUE)) {
+  cat("\nEstado general del pipeline:\n")
+  tar_progress() |>
+    count(progress) |>
+    kable(col.names = c("Estado", "Número de targets"))
+}
+```
+
 ## Referencias
 
 *Las referencias bibliográficas se incluirían aquí en un análisis completo, citando las fuentes de datos, métodos estadísticos, y literatura científica relevante.*
@@ -1571,3 +1715,114 @@ if (exists("cleaned_occurrences")) {
   }
 }
 ```
+
+## Discusión
+
+### Manejo de ambientes
+
+La implementación de avanzadas herramientas bioinformáticas y la gestión eficiente de pipelines han revolucionado el estudio de la biodiversidad y la evolución de la biota marina. En este marco, el proyecto propone una aplicación de R que hace uso de Nix por medio del paquete R {rix}, convergiendo en una solución óptima para el manejo de diversas funciones, incluyendo el procesamiento de datos, la gestión de código y la integración de información en repositorios.
+
+Gracias al uso de Nix, un sistema de paquetes de código abierto que adopta una nueva manera de manejar las dependencias, proporcionando un entorno de trabajo coherentemente reproducible. Asegura que los paquetes se construyen e instalan de manera aislada, lo que permite un control de versiones y una gestión de las dependencias finamente afinada (Dolstra, E., 2006). Así, Nix se impone como una herramienta fundamental cambio de contextos académicos y empresariales, permitiendo la creación de entornos de trabajo estables y reproducibles.
+
+### Perspectivas y limitaciones
+
+Potential Applications
+
+- Personalized Medicine: Identifying genetic predispositions to diseases and tailoring treatments based on an individual's genetic makeup. 
+- Cancer Research: Identifying mutations in tumors to guide cancer treatment strategies and monitor treatment responses. 
+- Infectious Disease: Tracking outbreaks by sequencing pathogens and understanding their genetic relationships. 
+- Drug Discovery: Uncovering new drug targets and identifying potential drug repurposing opportunities by understanding disease-causing genetic mechanisms. 
+
+Área de Mejora: La principal fricción a futuro es el acoplamiento manual entre _targets.R y build_env.R. Actualmente, si usted añade library(nuevo_paquete) en su pipeline _targets.R, debe recordar manualmente añadir "nuevo_paquete" al vector targets_packages en build_env.R. A medida que el proyecto crezca y colaboren más personas, es casi seguro que este paso se olvidará, lo que provocará fallos en las pruebas (make test) y frustración.
+
+Para que este flujo de trabajo sea verdaderamente a prueba de futuro, el siguiente paso lógico es automatizar la sincronización de paquetes.
+
+Se podría modificar el script regenerate.sh (o crear uno nuevo) para que, antes de ejecutar build_env.R, primero analice el archivo _targets.R en busca de todas las llamadas library(...). Luego, puede pasar esa lista de paquetes como un argumento a su script de R o escribirla en un archivo temporal que build_env.R pueda leer.
+
+Esto desacoplaría completamente la definición del ambiente de la pipeline, adhiriéndose al principio de "Fuente Única de Verdad" (Single Source of Truth). Su pipeline en _targets.R se convierte en la única fuente que define qué paquetes se necesitan, y el resto del sistema reacciona automáticamente.
+
+Sin embargo, la arquitectura actual es excelente, avanzada y se adelanta a la mayoría de los flujos de trabajo académicos. Es altamente reproducible y fácil de usar. Al implementar la sincronización automática de paquetes, lo convertirá en un sistema prácticamente infalible y listo para escalar a cualquier complejidad.
+
+## Conclusiones
+
+
+✅ Reproducibilidad (Fortaleza Mayor)
+
+Este es el punto más fuerte de su sistema. Al definir el entorno computacional de forma declarativa con rix en build_env.R y materializarlo con Nix, ha eliminado prácticamente la variabilidad del entorno. Cualquier investigador, en cualquier máquina con Nix, puede ejecutar make regenerate y nix-shell para recrear un ambiente de software bit a bit idéntico. Esto es el estándar de oro para la reproducibilidad computacional.
+
+✅ Facilidad de Uso y Mantenimiento (Fortaleza)
+
+El Makefile es la clave aquí. Proporciona una "API" de línea de comandos simple y legible para su proyecto. Un nuevo colaborador no necesita entender los detalles de Nix o los scripts de shell; solo necesita leer la salida de make help para empezar a trabajar. Esto reduce drásticamente la curva de aprendizaje y los posibles errores.
+
+📈 Escalabilidad (Fortaleza con un área de mejora)
+
+    Fortaleza: El uso de {targets} es ideal para la escalabilidad del análisis. Su naturaleza basada en dependencias garantiza que solo se recalculen los pasos necesarios, ahorrando un tiempo de cómputo inmenso a medida que el análisis crece en complejidad.
+
+    
+
+## Citations
+
+### Software Citations
+
+Please cite the following software packages used in this analysis:
+
+#### biomartr
+
+> Drost HG, Paszkowski J. Biomartr: genomic data retrieval with R. 
+> Bioinformatics (2017) 33(8): 1216-1217. 
+> doi:10.1093/bioinformatics/btw821
+
+#### targets
+
+> Landau, W. M., (2021). The targets R package: a dynamic Make-like 
+> function-oriented pipeline toolkit for reproducibility and 
+> high-performance computing. Journal of Open Source Software, 6(57), 2959,
+> https://doi.org/10.21105/joss.02959
+
+#### Biostrings
+
+> Pagès H, Aboyoun P, Gentleman R, DebRoy S (2023). Biostrings: Efficient 
+> manipulation of biological strings. R package version 2.68.0,
+> https://bioconductor.org/packages/Biostrings.
+
+### Data Sources
+
+```{r data-sources}
+if (!is.null(genomic_sequences)) {
+  databases_used <- unique(unlist(lapply(genomic_sequences, function(x) {
+    if (is.list(x) && !is.null(x$database_used)) {
+      return(x$database_used)
+    }
+    return(NULL)
+  })))
+  
+  databases_used <- databases_used[!is.null(databases_used)]
+  
+  if (length(databases_used) > 0) {
+    cat("Data retrieved from the following NCBI databases:\n\n")
+    for (db in databases_used) {
+      if (db == "refseq") {
+        cat("- **NCBI RefSeq**: https://www.ncbi.nlm.nih.gov/refseq/\n")
+        cat("  > O'Leary NA, et al. Reference sequence (RefSeq) database at NCBI: current status, taxonomic expansion, and functional annotation. Nucleic Acids Res. 2016;44(D1):D733-45.\n\n")
+      } else if (db == "genbank") {
+        cat("- **NCBI GenBank**: https://www.ncbi.nlm.nih.gov/genbank/\n")
+        cat("  > Sayers EW, et al. Database resources of the National Center for Biotechnology Information. Nucleic Acids Res. 2022;50(D1):D20-D26.\n\n")
+      }
+    }
+  }
+}
+```
+
+
+### File Locations
+
+All downloaded genomic data files are stored in:
+
+- **Proteomes**: `data/raw/genomic/proteomes/`
+- **CDS**: `data/raw/genomic/cds/`
+- **GFF annotations**: `data/raw/genomic/gff/`
+- **Summary reports**: `data/processed/genomic/`
+
+---
+
+*Report generated on `r Sys.time()`*
