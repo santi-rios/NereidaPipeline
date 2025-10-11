@@ -407,3 +407,165 @@ The academic report you generate is a separate creative work. For this, a Creati
 
     Recommended: CC BY 4.0
     This license allows others to distribute, remix, adapt, and build upon your report, even commercially, as long as they credit you for the original creation. This is the standard for open-access academic work and ensures you get credit.
+
+# git versioning
+
+---
+
+## 🏷️ 1. Crear un **tag de versión** (“release”) desde VS Code
+
+Puedes hacerlo completamente desde tu terminal integrada de VS Code.
+Suponiendo que ya tienes el proyecto funcionando y todo *commit* está hecho:
+
+```bash
+# 1. Asegúrate de estar en la rama principal
+git checkout main
+
+# 2. Verifica que esté todo actualizado
+git pull
+
+# 3. Crea un tag con versión semántica (ej. v1.0.0)
+git tag -a v1.0.0 -m "Release v1.0.0: versión estable inicial del pipeline de biodiversidad marina con Nix reproducible."
+
+# 4. Sube tanto el código como el tag a GitHub
+git push origin main
+git push origin v1.0.0
+```
+
+💡 **Nota:**
+
+* El prefijo `v` (como `v1.0.0`) es la convención más usada para versiones semánticas.
+* Puedes usar `-a` para que el tag sea “anotado” (guarda autor, fecha y mensaje), que es lo recomendable.
+
+---
+
+## 🧾 2. Crear el *Release* en GitHub
+
+Después de subir el tag (`v1.0.0`), entra a tu repositorio en GitHub:
+
+1. Haz clic en la pestaña **“Releases”** (o entra directamente en `https://github.com/usuario/repositorio/releases`).
+
+2. Haz clic en **“Create/Draft a new release”**.
+
+3. En el campo **“Tag version”**, selecciona el tag que subiste (`v1.0.0`).
+
+4. Título:
+
+   ```
+   Release v1.0.0 - Versión estable inicial
+   ```
+
+5. Descripción: aquí es donde la gente suele escribir el **CHANGELOG** resumido.
+   Por ejemplo:
+
+```markdown
+## 🚀 Novedades
+- Pipeline funcional completo para análisis de biodiversidad marina.
+- Integración con entorno reproducible usando `rix` y `nix`.
+- Scripts automatizados de R para análisis estadístico y visualización.
+
+## 🧩 Dependencias reproducibles
+- Incluye `default.nix` y `.Rprofile` para recrear el entorno exacto.
+- Testeado en NixOS y Pop!_OS (vía nix-shell).
+
+## 🧪 Próximos pasos
+- Añadir visualizaciones interactivas con `shiny`.
+- Optimizar procesamiento de datos grandes con `data.table`.
+```
+
+6. Puedes marcar “This is a pre-release” si aún no es 100 % estable (ej. v0.9.0).
+
+7. Publica el *release*.
+
+---
+
+## 🧭 3. Cómo llevar un **CHANGELOG profesional**
+
+Para cada versión puedes usar un archivo llamado `CHANGELOG.md` en la raíz del repo.
+Ejemplo de estructura:
+
+```markdown
+# Changelog
+
+Todas las versiones notables de este proyecto se documentarán aquí.
+
+## [1.0.0] - 2025-10-11
+### Añadido
+- Primer release estable con entorno reproducible Nix.
+- Scripts principales del pipeline de biodiversidad marina.
+- Documentación inicial y ejemplos de uso.
+
+### Corregido
+- Error en importación de datos CSV desde ruta relativa.
+- Compatibilidad con Pop!_OS y Ubuntu.
+
+## [0.9.0] - 2025-09-30
+### Añadido
+- Versión beta del pipeline.
+```
+
+Sugerencias de [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) como formato estándar:
+
+- Debe haber una entrada para cada versión.
+- Los mismos tipos de cambios deben ser agrupados.
+- Versiones y secciones deben ser enlazables.
+- La última versión va primero.
+- Debe mostrar la fecha de publicación de cada versión.
+- Indicar si el proyecto sigue el Versionamiento Semántico. 
+
+### Tipos de cambios
+
+- 'Added' para funcionalidades nuevas.
+- 'Changed' para los cambios en las funcionalidades existentes.
+- 'Deprecated' para indicar que una característica o funcionalidad está obsoleta y que se eliminará en las próximas versiones.
+- 'Removed' para las características en desuso que se eliminaron en esta versión.
+- 'Fixed' para corrección de errores.
+- 'Security' en caso de vulnerabilidades.
+
+
+---
+
+## 📁 4. Archivos importantes para **reproducibilidad** (Nix + R)
+
+Se recomienda fuertemente **subir los archivos del entorno** para garantizar que cada versión sea autocontenida:
+
+| Archivo       | ¿Subir al repo? | Propósito                                                           |
+| ------------- | --------------- | ------------------------------------------------------------------- |
+| `default.nix` | ✅ **Sí**        | Define cómo reproducir el entorno completo (R, dependencias, etc.)  |
+| `shell.nix`   | ✅ **Sí**        | Alternativa o complemento a `default.nix` si usas `nix-shell`       |
+| `.Rprofile`   | ✅ **Sí**        | Define el comportamiento de R (carga de librerías, opciones, hooks) |
+| `.envrc`      | ⚠️ Opcional     | Solo si usas `direnv` para cargar Nix automáticamente               |
+| `.gitignore`  | ✅ **Sí**        | Evita subir archivos temporales o pesados                           |
+| `README.md`   | ✅ **Sí**        | Explica cómo reproducir el entorno con Nix y cómo usar el pipeline  |
+
+Ejemplo de sección en tu README:
+
+````markdown
+## 🧬 Reproducir el entorno con Nix
+
+Este proyecto usa [`rix`](https://github.com/ropensci/rix) para crear entornos reproducibles de R.
+
+```bash
+# Para abrir el entorno de desarrollo
+nix-shell
+
+# O bien, usando rix directamente
+rix shell
+````
+
+> Esto garantiza que todas las dependencias estén fijadas y el análisis sea 100% reproducible.
+
+---
+
+## 💅 5. Extras para que el repo se vea profesional
+
+| Elemento | Descripción |
+|-----------|--------------|
+| 🧾 `LICENSE` | Añade una licencia (ej. MIT, GPL-3.0). Esto da credibilidad y claridad. |
+| 🧠 `README.md` completo | Debe tener: descripción, instalación, uso, ejemplo, autor, contacto. |
+| 🔧 `CONTRIBUTING.md` | Explica cómo contribuir (útil si esperas colaboraciones). |
+| 🧪 `tests/` | Carpeta con scripts de testeo (aunque sean básicos). |
+| 🐳 `Dockerfile` (opcional) | Otra capa de reproducibilidad alternativa. |
+| 📦 `CITATION.cff` | Archivo para que GitHub muestre cómo citar tu proyecto (útil si es científico). |
+
+---

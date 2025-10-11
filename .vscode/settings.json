@@ -1,5 +1,12 @@
 {
     "cSpell.words": [
         "pkgs"
-    ]
+    ],
+    "workbench.editor.customLabels.enabled": true,
+    "workbench.editor.customLabels.patterns": {
+        "*/reportes/analisis_biodiversidad_marina.qmd": "reporte",
+        "*/reportes/analisis_biodiversidad_marina.html": "html",
+        "*/reports/genomic_data_retrieval.qmd": "genomic",
+        "*/_targets.R": "targets"
+    }
 }
