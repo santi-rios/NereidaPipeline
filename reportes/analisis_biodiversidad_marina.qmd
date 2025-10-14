@@ -160,6 +160,87 @@ Multiómicos se refiere a un enfoque de investigación que integra datos de múl
 - Microbioma: Estudio de las comunidades microbianas y su impacto en el huésped. 
 
 
+### Metagenomics
+
+Metagenomes are collections of genomic sequences from various (micro)organisms that coexist in any given space. They are like snapshots that can give us information about the taxonomic and even metabolic or functional composition of the communities we decide to study. Thus, metagenomes are usually employed to investigate the ecology of defining characteristics of niches (* e.g.,*, the human gut or the ocean floor).
+
+Since metagenomes are mixtures of sequences that belong to different species, a metagenomic workflow is designed to answer two questions:
+
+    What species are represented in the sample?
+    What are they capable of doing?
+
+To find which species are present in a niche, we must do a taxonomic assignation of the obtained sequences. To find out their capabilities, we can look at the genes directly encoded in the metagenome or find the genes associated with the species that we found. In order to know which methodology we should use, it is essential to know what questions we want to answer.
+Shotgun and amplicon
+
+There are two paths to obtain information from a complex sample:
+
+    Shotgun Metagenomics
+    Metabarcoding.
+
+Each is named after the sequencing methodology employed Moreover, have particular use cases with inherent advantages and disadvantages.
+
+With Shotgun Metagenomics, we sequence random parts (ideally all of them) of the genomes present in a sample. We can search the origin of these pieces (i.e., their taxonomy) and also try to find to what part of the genome they correspond. Given enough pieces, it is possible to obtain complete individual genomes from a shotgun metagenome (MAGs), which could give us a bunch of information about the species in our study. MAGs assembly, however, requires a lot of genomic sequences from one organism. Since the sequencing is done at random, it needs a high depth of community sequencing to ensure that we obtain enough pieces of a given genome. Required depth gets exponentially challenging when our species of interest is not very abundant. It also requires that we have enough DNA to work with, which can be challenging to obtain in some instances. Finally, sequencing is expensive, and because of this, making technical and biological replicates can be prohibitively costly.
+
+On the contrary, Metabarcoding tends to be cheaper, which makes it easier to duplicate and even triplicate them without taking a big financial hit. The lower cost is because Metabarcoding is the collection of small genomic fragments present in the community and amplified through PCR. Ideally, if the amplified region is present only once in every genome, we would not need to sequence the amplicon metagenome so thoroughly because one sequence is all we need to get the information about that genome, and by extension, about that species. On the other hand, if a genome in the community lacks the region targeted by the PCR primers, then no amount of sequencing can give us information about that genome. Conservation across species is why the most popular amplicon used for this methodology are 16S amplicons for Bacteria since every known bacterium has this particular region. Other regions can be chosen, but they are used for specific cases. However, even 16S amplicons are limited to, well, the 16S region, so amplicon metagenomes cannot directly tell us a lot about the metabolic functions found in each genome, although educated guesses can be made by knowing which genes are commonly found in every identified species.
+
+::: {.callout-tip}
+
+Exercise 1: Reviewing metadata
+
+According to the results described for this CCB study.
+
+    What kind of sequencing method do you think they used, and why do you think so?
+    A) Metabarcoding
+    B) Shotgun metagenomics
+    C) Genomics of axenic cultures
+
+    In the table samples treatment information, what was the most critical piece of metadata that the authors took?
+
+
+    Solution
+A) Metabarcoding. False. With this technique, usually, only one region of the genome is amplified.
+B) Shotgun Metagenomics. True. Only shotgun metagenomics could have been used to investigate the total number of tRNA genes.
+C) Genomics of axenic cultures. False. Information on the microbial community cannot be fully obtained with axenic cultures.
+
+The most crucial thing to know about our data is which community was and was not supplemented with fertilizers.
+However, any differences in the technical parts of the study, such as the DNA extraction protocol, could have affected the results, so tracking those is also essential.
+
+
+    Exercise 2: Differentiate between IDs and sample names
+
+    Depending on the database, several IDs can be used for the same sample. Please open the document where the metadata information is stored. Here, inspect the IDs and find out which of them correspond to sample JP4110514WATERRESIZE
+
+        Solution
+
+        ERS1949771 is the SRA ID corresponding to JP4110514WATERRESIZE
+
+
+
+    Exercise 3: Discuss the importance of metadata
+
+    Which other information could you recommend to add in the metadata?
+
+        Solution
+
+        Metadata will depend on the type of the experiment, but some examples are the properties of the water before and after fertilization, sampling, and processing methodology, date and time, place (country, state, region, city, etc.).
+
+
+
+:::
+
+### Bioninfomratic wokflows
+
+When working with high-throughput sequencing data, the raw reads you get off the sequencer must pass through several different tools to generate your final desired output. The execution of this set of tools in a specified order is commonly referred to as a workflow or a pipeline.
+
+![](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-02-01.png)
+
+
+    Quality control - Assessing quality using FastQC and Trimming and/or filtering reads (if necessary)
+    Assembly of metagenome
+    Binning
+    Taxonomic assignation
+
+
 ## El Paradigma de la Investigación Reproducible
 
 > Establecer el marco conceptual y la necesidad urgente de la reproducibilidad computacional en las ciencias, particularmente en ecología y evolución.
@@ -266,7 +347,22 @@ Si se necesita 'conda' por razones prácticas (paquetes no disponibles en 'nixpk
 
 ## Pipelines
 
-La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. `
+[@zirion-martinez2024]: Metagenomic analyses aim to explore the genomic diversity of communities in specific
+habitats by processing their DNA sequencing data. This analysis is achieved with special-
+ized bioinformatics tools, which often require previous coding experience. Furthermore,
+beginners can struggle to build a pipeline from raw data to valuable biological insights.
+The Carpentries hosts open lessons used worldwide to analyze specialized datasets for
+beginners, including a Data Carpentry curriculum for individuals working with genomics
+sequencing data. However, a lesson addressing the specific challenges associated with
+metagenomics data and analyses was missing. We created a complete Metagenomics
+curriculum in The Carpentries Incubator, adapting and expanding on the Data Carpentry
+genomics curriculum. The curriculum provides an introduction to programming, teaching
+learners to access and handle metagenomics data, and to run commands with the software
+needed for completing metagenomics analyses. Content and exercises have been improved
+based on experience gathered in teaching the curriculum in three 16-hour online workshops.
+We expect to continue to enhance this lesson, which we hope is helpful as a teaching
+resource for new instructors in the field, and as a guide for newcomers wishing to perform
+metagenomic analyses from scratch 
 
 [@landau2021]: Esta es la cita oficial y directa del paquete `{targets}`. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.
 
@@ -283,6 +379,18 @@ La gestión de la pipeline es crucial para la eficiencia y la corrección de los
 4. **Modelar idoneidad de hábitat** considerando variables ambientales
 5. **Generar recomendaciones** para conservación basadas en evidencia
 
+# Pregunta de INvestigacióñ
+
+Suppose you want to find the source of a nasty gut infection in people. Which type of sequencing methodology would you choose?
+Which type of metadata would be helpful to record?
+
+
+::: {.callout titile="solución"}
+
+
+For a first exploration, 16S is a better idea since you could detect known pathogens by knowing the taxons in the community. Nevertheless, if the disease is the consequence of a viral infection, the pathogen can only be discovered with shotgun metagenomics (that was the case of SARS-CoV 2). Also, metabarcoding does not provide insights into the genetic basis of the pathogenic phenotypes. Metadata will depend on the type of experiment. For this case, some helpful metadata could be sampling methodology, date, place (country, state, region, city, etc.), patient’s sex and age, the anatomical origin of the sample, symptoms, medical history, diet, lifestyle, and environment.
+:::
+
 # Planteamiento del problema
 
 ¿Por qué es importante la multiómica? Proporciona una perspectiva más completa de un sistema biológico en lugar de solo estudiar componentes aislados. Sin embargo, es la Integración de datos complejos, los cuales Permiten integrar y analizar grandes volúmenes de datos generados por diferentes tecnologías de alto rendimiento, no suele ser un paso sencillo.
@@ -294,6 +402,15 @@ For example, Next-Generation-Sequencing (NGS) bioinformatics uses computational 
 [@dolstra2006]: the Nix deployment system, which overcomes the limitations of contemporary deployment tools described above. It solves implementation (how it works), the underlying principles (why it works), our experiences and empirical validation (that it works), and the application areas to which it can be applied (where it works).
 
 La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. `{targets}` es el estándar moderno en el ecosistema R.
+
+[@zirion-martinez2024]: La gestión de la pipeline es crucial para la eficiencia y la corrección de los análisis complejos. ioinformatic tools are now essential to our understanding of biological systems. Open
+lessons for general-purpose coding languages and specialized topics such as genomics,
+ecology, and even metagenomics are already available (Darling et al., 2019), (Lessons, n.d.),
+(Kruchten, 2020). Nevertheless, a complete guide for shotgun metagenomics, assuming
+no prior knowledge of coding and provided hardware and software solutions, was missing.
+We introduce a curriculum to fill this gap, which teaches the skills required to conduct a
+comprehensive metagenomics workflow with Bash and R programming in a pre-installed
+remote server.
 
 [@landau2021]: Esta es la cita oficial y directa del paquete `{targets}`. Es indispensable. Úsela para introducir la herramienta, explicando que su elección se basa en una solución documentada y revisada por pares diseñada específicamente para crear pipelines de análisis reproducibles y eficientes en R. Resalte características clave que el artículo menciona, como el seguimiento de dependencias y el paralelismo, que son cruciales para análisis a gran escala en conservación.
 
@@ -405,6 +522,451 @@ Use  for evolutionary transcriptomics
 
 - [dereplicate MAGs? (metagenome assembly genomes)](https://www.reddit.com/r/bioinformatics/comments/or0r6z/how_to_dereplicate_mags_metagenome_assembly/?sort=top)
   - ou should look at https://github.com/MrOlm/drep . Thats exactly the tool you need. Usually one takes all their bins and dereplicates them at 99% ANI for strain level dereplication or 95% at species level. For preserving the best quality, you would need to check yourself if the best genome survived the dereplication afaik. You probably want some sort of quality score and chose the one with the highest score out of the bins that got grouped as one by dereplication.
+
+#### sujetos experimentales
+
+::: {.callout  titile"ejemplo"}
+
+During this lesson, we will work with actual metagenomic information, so we should be familiarized with it. The metagenomes that we will use were collected in Cuatro Ciénegas, a region that has been extensively studied by Valeria Souza. Cuatro Ciénegas is an oasis in the Mexican desert whose environmental conditions are often linked to the ones present in ancient seas, due to a higher-than-average content of sulfur and magnesium but a lower concentrations of phosphorus and other nutrients. Because of these particular conditions, the Cuatro Ciénegas basin is a fascinating place to conduct a metagenomic study to learn more about the bacterial diversity that is capable to survive and thrive in that environment.
+
+The particular metagenomic study that we are going to work with was collected in a study about the response of the Cuatro Cienegas’ bacterial community to nutrient enrichment. In this study, authors compared the differences between the microbial community in its natural, oligotrophic, phosphorus-deficient environment, a pond from the Cuatro Ciénegas Basin (CCB), and the same microbial community under a fertilization treatment. The comparison between bacterial communities showed that many genomic traits, such as mean bacterial genome size, GC content, total number of tRNA genes, total number of rRNA genes, and codon usage bias were significantly changed when the bacterial community underwent the treatment.
+
+:::
+
+
+#### On metadata 
+
+Once we have chosen an adequate methodology for our study, we must take extensive notes on the origin of our samples and how we treated them. These notes constitute the metadata, or data about our data, and they are crucial to understanding and interpreting the results we will obtain later in our metagenomic analysis. Most of the time, the differences that we observe when comparing metagenomes can be correlated to the metadata, which is why we must devote a whole section of our experimental design to the metadata we expect to collect and record carefully.
+
+#### Databases
+
+The results of this study, raw sequences, and metadata have been submitted to the NCBI Sequence Read Archive (SRA) and stored in the BioProject PRJEB22811.
+
+    Other metagenomic databases
+
+    The NCBI SRA is not the only repository for metagenomic information. There are other public metagenomic databases such as MG-RAST, MGnify, Marine Metagenomics Portal, Terrestrial Metagenome DB and the GM Repo.
+
+Each database requires certain metadata linked with the data. As an example, when JP4D.fasta is uploaded to mg-RAST the associated metadata looks like this:
+Column 	Description
+file_name 	JP4D.fasta
+investigation_type 	metagenome
+seq_meth 	Illumina
+project_description 	This project is a teaching project and uses data from Okie et al. Elife 2020
+collection_date 	2012-06-27
+country 	Mexico
+feature 	pond water
+latitude 	26.8717055555556
+longitude 	-102.14
+env_package 	water
+depth 	0.165
+
+
+#### Quality control
+
+ Questions
+
+    How can I describe the quality of my data?
+
+Objectives
+
+    Explain how a FASTQ file encodes per-base quality scores.
+
+    Interpret a FastQC plot summarizing per-base quality across all reads.
+
+    Use for loops to automate operations on multiple files.
+
+Although it looks complicated (and it is), we can understand the FASTQ format with a little decoding. Some rules about the format include the following:
+Line 	Description
+1 	Always begins with ‘@’ followed by the information about the read
+2 	The actual DNA sequence
+3 	Always begins with a ‘+’ and sometimes contains the same info as in line 1
+4 	Has a string of characters which represent the quality scores; must have same number of characters as line 2
+
+```
+
+$ cd ~/dc_workshop/data/untrimmed_fastq/
+
+$ gunzip JP4D_R1.fastq.gz
+
+$ head -n 4 JP4D_R1.fastq
+
+@MISEQ-LAB244-W7:156:000000000-A80CV:1:1101:12622:2006 1:N:0:CTCAGA
+CCCGTTCCTCGGGCGTGCAGTCGGGCTTGCGGTCTGCCATGTCGTGTTCGGCGTCGGTGGTGCCGATCAGGGTGAAATCCGTCTCGTAGGGGATCGCGAAGATGATCCGCCCGTCCGTGCCCTGAAAGAAATAGCACTTGTCAGATCGGAAGAGCACACGTCTGAACTCCAGTCACCTCAGAATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAAAAGCAAACCTCTCACTCCCTCTACTCTACTCCCTT                                        
++                                                                                                
+A>>1AFC>DD111A0E0001BGEC0AEGCCGEGGFHGHHGHGHHGGHHHGGGGGGGGGGGGGHHGEGGGHHHHGHHGHHHGGHHHHGGGGGGGGGGGGGGGGHHHHHHHGGGGGGGGHGGHHHHHHHHGFHHFFGHHHHHGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFFBFFFF@F@FFFFFFFFFFBBFF?@;@#################################### 
+
+```
+
+Line 4 shows the quality of each nucleotide in the read. Quality is interpreted as the probability of an incorrect base call (e.g., 1 in 10) or, equivalently, the base call accuracy (e.g., 90%). Each nucleotide’s numerical score’s value is converted into a character code where every single character represents a quality score for an individual nucleotide. This conversion allows the alignment of each individual nucleotide with its quality score. For example, in the line above, the quality score line is:
+
+```
+A>>1AFC>DD111A0E0001BGEC0AEGCCGEGGFHGHHGHGHHGGHHHGGGGGGGGGGGGGHHGEGGGHHHHGHHGHHHGGHHHHGGGGGGGGGGGGGGGGHHHHHHHGGGGGGGGHGGHHHHHHHHGFHHFFGHHHHHGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFFBFFFF@F@FFFFFFFFFFBBFF?@;@#################################### 
+
+```
+
+The numerical value assigned to each character depends on the sequencing platform that generated the reads. The sequencing machine used to generate our data uses the standard Sanger quality PHRED score encoding, using Illumina version 1.8 onwards. Each character is assigned a quality score between 0 and 41, as shown in the chart below.
+
+Quality encoding: !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJ
+                   |         |         |         |         |
+Quality score:    01........11........21........31........41                                
+
+Each quality score represents the probability that the corresponding nucleotide call is incorrect. These probability values are the results of the base calling algorithm and depend on how much signal was captured for the base incorporation. This quality score is logarithmically based, so a quality score of 10 reflects a base call accuracy of 90%, but a quality score of 20 reflects a base call accuracy of 99%. In this link you can find more information about quality scores.
+
+
+> 💡 idea: se puede usar fastq
+
+##### working with the fastqc results
+
+  > We can make a record of the results we obtained for all our samples by concatenating all of our summary.txt files into a single file using the cat command. We’ll call this fastqc_summaries.txt and store it to ~/dc_workshop/docs.
+
+Which samples failed at least one of FastQC’s quality tests? What test(s) did those samples failed
+
+Explore MultiQC if you want a tool that can show the quality of many samples at once.
+
+
+#### Trimming and Filtering
+
+
+Teaching: 30 min
+Exercises: 25 min
+Questions
+
+    How can we get rid of sequence data that does not meet our quality standards?
+
+Objectives
+
+    Clean FASTQ reads using Trimmomatic.
+
+    Select and set multiple options for command line bioinformatic tools.
+
+    Write for loops with two variables.
+
+
+In the last episode, we took a high-level look at the quality of each of our samples using FastQC. We visualized per-base quality graphs showing the distribution of the quality at each base across all the reads from our sample. This information helps us to determine the quality threshold we will accept, and thus, we saw information about which samples fail which quality checks. Some of our samples failed quite a few quality metrics used by FastQC. However, this does not mean that our samples should be thrown out! It is common to have some quality metrics fail, which may or may not be a problem for your downstream application. For our workflow, we will remove some low-quality sequences to reduce our false-positive rate due to sequencing errors.
+
+To accomplish this, we will use a program called Trimmomatic. This useful tool filters poor quality reads and trims poor quality bases from the specified samples.
+
+Bonus Exercise (Advanced): Quality test after trimming
+
+Now that our samples have gone through quality control, they should perform better on the quality tests run by FastQC.
+
+Sort the following chunks of code to re-run FastQC on your trimmed FASTQ files and visualize the HTML files to see whether your per base sequence quality is higher after trimming.
+
+#### Metagenome Assembly
+
+ Questions
+
+    Why should genomic data be assembled?
+
+    What is the difference between reads and contigs?
+
+    How can we assemble a metagenome?
+
+Objectives
+
+    Understand what an assembly is.
+
+    Run a metagenomics assembly workflow.
+
+    Use an environment in a bioinformatic pipeline.
+
+
+The assembly process groups reads into contigs and contigs into scaffolds to obtain (ideally) the sequence of a whole chromosome. There are many programs devoted to genome and metagenome assembly, some of the main strategies they use are Greedy extension, OLC, and De Bruijn charts. Contrary to metabarcoding, shotgun metagenomics needs an assembly step, which does not mean that metabarcoding never uses an assembly step but sometimes is unnecessary.
+
+![](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-04-01.png)
+
+MetaSPAdes is an NGS de novo assembler for assembling large and complex metagenomics data, and it is one of the most used and recommended. It is part of the SPAdes toolkit, which contains several assembly pipelines.
+
+Some of the problems faced by metagenomics assembly are:
+
+    Differences in coverage between the genomes due to the differences in abundance in the sample.
+    The fact that different species often share conserved regions.
+    The presence of several strains of a single species in the community.
+
+SPAdes already deals with the non-uniform coverage problem in its algorithm, so it is helpful for the assembly of simple communities, but the metaSPAdes algorithm deals with the other problems as well, allowing it to assemble metagenomes from complex communities.
+
+The process of (metagenomics) assembly can take a long time, and if the connection to the server drops, the process is killed, and the process needs to restart. To avoid this, we can create a screen session.
+
+Exercise 2: Compare two fasta files from the assembly output
+
+You want to know how many contigs and scaffolds result from the assembly. Use contigs.fasta and scaffolds.fasta files and sort the commands to create correct code lines.
+Do they have the same number of lines? Why?
+Hint: You can use the following commands: grep, | (pipe), -l, ">", wc, filename.fasta
+
+
+    Quality of assemblies
+
+    You can use several metrics to know the quality of your assemblies. MetaQuast is a program that gives you these metrics for metagenome assemblies in an interactive report and text files and plots.
+
+
+#### Metagenome Binning
+
+ Questions
+
+    How can we obtain the original genomes from a metagenome?
+
+Objectives
+
+    Obtain Metagenome-Assembled Genomes from the metagenomic assembly.
+
+    Check the quality of the Metagenome-Assembled genomes.
+
+
+
+Original genomes in the sample can be separated with a process called binning. This process allows separate analysis of each species contained in the metagenome with enough reads to reconstruct a genome. Genomes reconstructed from metagenomic assemblies are called MAGs (Metagenome-Assembled Genomes). In this process, the assembled contigs from the metagenome will be assigned to different bins (FASTA files that contain certain contigs). Ideally, each bin corresponds to only one original genome (a MAG).
+
+![](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-05-01.png)
+
+Although an obvious way to separate contigs that correspond to a different species is by their taxonomic assignation, there are more reliable methods that do the binning using characteristics of the contigs, such as their GC content, the use of tetranucleotides (composition), or their coverage (abundance).
+
+Maxbin is a binning algorithm that distinguishes between contigs that belong to different bins according to their coverage levels and the tetranucleotide frequencies they have.
+
+::: {.callout}
+Discussion 1: Relation between MAGs and depth
+
+The sequencing center has returned you a file with 18,412 reads. Given that the bacterial genome size range between 4Mbp and 13Mbp (Mb=10^6 bp) and that the size of the reads in this run is 150bp. With these data, how many complete bacterial genomes can you reconstruct?
+
+None, because 18,412 reads of 150bp give a total count of 2,761,800bp (~2Mbp). Even if no read maps to the same region, the amount of base pairs is inferior to the size of a bacterial genome.
+
+
+Discussion: The quality of MAGs
+
+Can we trust the quality of our bins only with the given information? What else do we want to know about our MAGs to use for further analysis confidently?
+
+
+
+completeness is fundamental to know which data you are working with. If the MAG is incomplete, you can hypothesize that if you did not find something, it is because you do not have a complete genome. Genome size and GC content are like genomic fingerprints of taxa, so you can know if you have the taxa you are looking for. Since we are working with the mixed genomes of a community when we try to separate them with binning, we want to know if we were able to separate them correctly. So we need to measure contamination to know if we have only one genome in our bin.
+
+:::
+
+
+##### quality check
+
+
+
+The quality of a MAG is highly dependent on the size of the genome of the species, its abundance in the community and the depth at which we sequenced it. Two important things that can be measured to know its quality are completeness (is the MAG a complete genome?) and if it is contaminated (does the MAG contain only one genome?).
+
+CheckM is an excellent program to see the quality of our MAGs. It measures completeness and contamination by counting marker genes in the MAGs. The lineage workflow that is a part of CheckM places your bins in a reference tree to know to which lineage it corresponds and to use the appropriate marker genes to estimate the quality parameters. Unfortunately, the lineage workflow uses much memory, so it cannot run on our machines, but we can tell CheckM to use marker genes from Bacteria only to spend less memory. This is a less accurate approach, but it can also be advantageous if you want all of your bins analyzed with the same markers.
+
+We will run the taxonomy workflow specifying the use of markers at the domain level, specific for the rank Bacteria, we will specify that our bins are in FASTA format, that they are located in the MAXBIN directory and that we want our output in the CHECKM/ directory.
+
+
+#### taxonomic assignment
+
+ Questions
+
+    How can I know to which taxa my sequences belong?
+
+Objectives
+
+    Understand how taxonomic assignment works.
+
+    Use Kraken to assign taxonomies to reads and contigs.
+
+    Visualize taxonomic assignations in graphics.
+
+
+A taxonomic assignment is a process of assigning an Operational Taxonomic Unit (OTU, that is, groups of related individuals) to sequences that can be reads or contigs. Sequences are compared against a database constructed using complete genomes. When a sequence finds a good enough match in the database, it is assigned to the corresponding OTU. The comparison can be made in different ways.
+Strategies for taxonomic assignment
+
+There are many programs for doing taxonomic mapping, and almost all of them follow one of the following strategies:
+
+    BLAST: Using BLAST or DIAMOND, these mappers search for the most likely hit for each sequence within a database of genomes (i.e., mapping). This strategy is slow.
+
+    Markers: They look for markers of a database made a priori in the sequences to be classified and assigned the taxonomy depending on the hits obtained.
+
+    K-mers: A genome database is broken into pieces of length k to be able to search for unique pieces by taxonomic group, from a lowest common ancestor (LCA), passing through phylum to species. Then, the algorithm breaks the query sequence (reads/contigs) into pieces of length k, looks for where these are placed within the tree and make the classification with the most probable position.
+
+
+![Lowest common ancestor assignment example](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-06-01.png)
+
+
+#### abundance bias
+
+When you do the taxonomic assignment of metagenomes, a key result is the abundance of each taxon or OTU in your sample. The absolute abundance of a taxon is the number of sequences (reads or contigs, depending on what you did) assigned to it. Moreover, its relative abundance is the proportion of sequences assigned to it. It is essential to be aware of the many biases that can skew the abundances along the metagenomics workflow, shown in the figure, and that because of them, we may not be obtaining the actual abundance of the organisms in the sample.
+
+![Abundance biases during a metagenomics protocol](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-06-02.png)
+
+#### taxonomic assignment of the metagenomic reads
+
+Taxonomic assignment of the contigs of a MAG
+
+We now have the taxonomic identity of the reads of the whole metagenome, but we need to know to which taxon our MAGs correspond. For this, we have to make the taxonomic assignment with their contigs instead of its reads because we do not have the reads corresponding to a MAG separated from the reads of the entire sample.
+
+#### Visualization of taxonomic assignment results
+
+After we have the taxonomy assignation, what follows is some visualization of our results. Krona is a hierarchical data visualization software. Krona allows data to be explored with zooming and multi-layered pie charts and supports several bioinformatics tools and raw data formats. To use Krona in our results, let us first go into our taxonomy directory, which contains the pre-calculated Kraken outputs.
+
+#### Exploring taxonomy
+
+ Questions
+
+    How can I use my taxonomic assignment results to analyze?
+
+Objectives
+
+    Comprehend which libraries are required for analysis of the taxonomy of metagenomes.
+
+    Create and manage a Phyloseq object.
+
+we will use RStudio to analyze our microbial samples. You do not have to install anything, you already have an instance on the cloud ready to be used.
+
+Packages like Qiime2, MEGAN, Vegan, or Phyloseq in R allow us to analyze diversity and abundance by manipulating taxonomic assignment data. In this lesson, we will use Phyloseq. In order to do so, we need to generate an abundance matrix from the Kraken output files. One program widely used for this purpose is kraken-biom.
+
+To do this, we could go to our now familiar Bash terminal, but RStudio has an integrated terminal that uses the same language as the one we learned in the Command-line lessons, so let us take advantage of it. Let us open RStudio and go to the Terminal tab in the bottom left panel.
+
+Load required packages
+
+Phyloseq is a library with tools to analyze and plot your metagenomics samples’ taxonomic assignment and abundance information. Let us install phyloseq (This instruction might not work on specific versions of R) and other libraries required for its execution:
+
+Exploring the taxonomic labels
+
+Let us try to access the data that is stored inside our merged_metagenomes object. Since a phyloseq object is a special object in R, we need to use the operator @ to explore the subsections of data inside merged_metagenomes. If we type merged_metagenomes@, five options are displayed; tax_table and otu_table are the ones we will use. Let us see what is inside our tax_table:
+
+Here we can see that the tax_table inside our phyloseq object stores all the taxonomic labels corresponding to each OTU. Numbers in the row names of the table identify OTUs.
+
+Next, let us get rid of some of the unnecessary characters in the OTUs id and put names to the taxonomic ranks:
+
+To remove unnecessary characters tax_table, which is a matrix, we will use the command substring(). This command helps extract or replace characters in a vector. To use the command, we have to indicate the vector (x) followed by the first element to replace or extract (first) and the last element to be replaced (last). For instance: substring (x, first, last). substring() is a “flexible” command, especially to select characters of different lengths, as in our case. Therefore, it is not necessary to indicate “last”, so it will take the last position of the character by default. Since a matrix is an arrangement of vectors, we can use this command. Each character in tax_table is preceded by three spaces occupied by a letter and two underscores, for example: o__Rhodobacterales. In this case, “Rodobacterales” starts at position 4 with an R. So, to remove the unnecessary characters, we will use the following code:
+
+Exploring the abundance table
+
+Until now, we have looked at the part of the phyloseq object that stores the information about the taxonomy (at all the possible levels) of each OTU found in our samples. However, there is also a part of the phyloseq object that stores the information about how many sequenced reads corresponding to a certain OTU are in each sample. This table is the otu_table.
+
+#### Exploring diversity
+
+First plunge into diversity
+
+Species diversity, in its simplest definition, is the number of species in a particular area and their relative abundance (evenness). Once we know the taxonomic composition of our metagenomes, we can do diversity analyses. Here we will discuss the two most used diversity metrics, α diversity (within one metagenome) and β (across metagenomes).
+
+    α Diversity: Can be represented only as richness (, i.e., the number of different species in an environment), or it can be measured considering the abundance of the species in the environment as well (i.e., the number of individuals of each species inside the environment). To measure α-diversity, we use indexes such as Shannon’s, Simpson’s, Chao1, etc.
+
+
+![](https://gwu-libraries.github.io/metagenomics-analysis/fig/03-08-01.png)
+
+Exercise 3: Add metadata to beta diversity visualization
+
+In the following figure, the beta diversity graph we produced earlier has been enriched. Look at the code below and answer:
+1) Which instruction colored the samples by their corresponding treatment?
+2) What did the instruction geom_text do?
+3) What other difference do you notice with our previous graph?
+4) Do you see some clustering of the samples according to their treatment?
+
+
+    Discussion: Indexes of diversity
+
+    Why do you think we need different indexes to asses diversity? What index will you use to assess the impact of rare, low-abundance taxa?
+
+        Solution
+
+        It will be difficult (if not impossible) to take two communities and observe the same distribution of all members. This outcome is because there are a lot of factors affecting these lineages. Some of the environmental factors are temperature, pH, and nutrient concentration. Also, the interactions of these populations, such as competence, inhibition of other populations, and growth speed, are an important driver of variation (biotic factor). A combination of the factors mentioned above, can interact to maintain some populations with low abundance (rare taxa In order to have ways to assess hypotheses regarding which of these processes can be affecting the community, we use all these different indexes. Some emphasize the number of species and other the evenness of the OTUs. To assess the impact of low abundance lineages, one alpha diversity index widely used is the Chao1 index.
+
+
+
+    Key Points
+
+        Alpha diversity measures the intra-sample diversity.
+
+        Beta diversity measures the inter-sample diversity.
+
+        Phyloseq includes diversity analyses such as alpha and beta diversity calculation.
+
+#### taxonomic analysis
+
+ Questions
+
+    How can we know which taxa are in our samples?
+
+    How can we compare depth-contrasting samples?
+
+    How can we manipulate our data to deliver a message?
+
+Objectives
+
+    Manipulate data types inside your phyloseq object.
+
+    Extract specific information from taxonomic-assignation data.
+
+
+With the taxonomic assignment information that we obtained from Kraken, we have measured diversity, and we have visualized the taxa inside each sample with Krona and Pavian, but Phyloseq allows us to make this visualization more flexible and personalized. So now, we will use Phyloseq to make abundance plots of the taxa in our samples.
+
+We will start our exploration at the Phylum level. In order to group all the OTUs that have the same taxonomy at a certain taxonomic rank, we will use the function tax_glom().
+
+Going further, let’s take an exciting lineage and explore it thoroughly
+
+As we have already reviewed, Phyloseq offers many tools to manage and explore data. Let’s take a look at a function we already use but now with guided exploration. The subset_taxa command is used to extract specific lineages from a stated taxonomic level; we have used it to get rid of the reads that do not belong to bacteria with merged_metagenomes <- subset_taxa(merged_metagenomes, Kingdom == "Bacteria").
+
+We will use it now to extract a specific phylum from our data and explore it at a lower taxonomic level: Genus. We will take as an example the phylum Cyanobacteria (indeed, this is a biased and arbitrary decision, but who does not feel attracted to these incredible microorganisms?):
+
+
+    Exercise 1: Taxa agglomeration
+
+    With the following code, in the dataset with absolute abundances,
+    group together the phyla with a small number of reads to have a better visualization of the data. Remember to check the data classes inside your data frame.
+    According to the ColorBrewer package it is recommended not to have more than nine different colors in a plot.
+
+    What is the correct order to run the following chunks of code? Compare your graphs with your partners’.
+
+    Hic Sunt Leones! (Here be Lions!):
+
+    A) absolute_df$Phylum <- as.factor(absolute_df$Phylum)
+
+    B) absolute_plot <- ggplot(data= absolute_df, aes(x=Sample, y=Abundance, fill=Phylum))+
+    geom_bar(aes(), stat="identity", position="stack")+
+    scale_fill_manual(values = phylum_colors_abs)
+
+    C) absolute_$Phylum[absolute_$Abundance < 300] <- "Minoritary Phyla"
+
+    D) phylum_colors_abs<- colorRampPalette(brewer.pal(8,"Dark2")) (length(levels(absolute_df$Phylum)))
+
+    E) absolute_df$Phylum <- as.character(absolute_df$Phylum)
+
+        Solution
+
+    Exercise 2: Recap of abundance plotting
+
+    Match the chunk of code with its description and put them in the correct order to create a relative abundance plot at the genus level of a particular phylum. がんばって! (ganbatte; good luck):
+    Description 	Command
+    plot the relative abundance at the genus levels. 	plot_proteo
+    Convert all the genera with less than 3% abundance into only one label. 	proteo_percentages <- transform_sample_counts(proteo, function(x) >x*100 / sum(x) )
+    Make just one row that groups all the observations of the same genus. 	proteo <- subset_taxa(merged_metagenomes, Phylum == "Proteobacteria")
+    Create a phyloseq object only with the reads assigned to a certain phylum. 	unique(proteo@tax_table@.Data[,2])
+    Show the plot. 	proteo_glom <- tax_glom(proteo_percentages, taxrank = "Genus")
+    Transform the phyloseq object to a data frame. 	plot_proteo <- ggplot(data=proteo_df, aes(x=Sample, y=Abundance, fill=Genus))+
+      	geom_bar(aes(), stat="identity", position="stack")+
+      	scale_fill_manual(values = genus_colors_proteo)
+    Convert the Genus column into the factor structure. 	proteo_df$Genus[proteo_df$Abundance < 3] <- "Genera < 3% abund"
+    Look at the phyla present in your phyloseq object. 	proteo_df <- psmelt(proteo_glom)
+    Convert the abundance counts to relative abundance. 	genus_colors_proteo<- colorRampPalette(brewer.pal(8,"Dark2")) (length(levels(proteo_df$Genus)))
+    Make a palette with the appropriate colors for the number of genera. 	proteo_df$Genus <- as.factor(proteo_df$Genus)
+
+        Solution
+
+    Key Points
+
+        Depths and abundances can be visualized using phyloseq.
+
+        The library phyloseq lets you manipulate metagenomic data in a taxonomic specific perspective.
+
+
+#### {SqueezeMeta}
+
+SqueezeMeta includes multi-metagenome support allowing the co-assembly of related metagenomes and the retrieval of individual metagenome-assembled genomes (MAGs) via binning procedures. Thus, SqueezeMeta features several characteristics:
+
+    Several assembly and co-assembly algorithms and strategies for short and long reads
+
+    Several binning algorithms for the recovery of metagenome-assembled genomes (MAGs)
+
+    Taxonomic annotation, functional annotation and quantification of genes, contigs, and bins
+
+    Support for the annotation and quantification of pre-existing assemblies or collections of genomes
+
+    Support for de-novo metatranscriptome assembly and hybrid metagenomics/metatranscriptomics projects
+
+    Support for the annotation of unassembled shotgun metagenomic reads
+
+    An R package to easily explore your results, including bindings for microeco and phyloseq
+
 
 ## Adquisición de Datos Ocurrencia
 
