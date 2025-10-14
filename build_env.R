@@ -63,7 +63,8 @@ targets_packages <- c(
   "knitr",  # For report generation
   "kableExtra",  # For nice tables in reports
   # packages for quarto code-linking
-  "rmarkdown", "downlit", "xml2"
+  "rmarkdown", "downlit", "xml2",
+  "visNetwork"
 )
 
 # Optional packages (only if available)

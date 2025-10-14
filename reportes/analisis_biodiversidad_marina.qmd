@@ -393,6 +393,19 @@ Find orthologs across species
 Use  for evolutionary transcriptomics
 
 
+### metagenomics
+
+- https://academic.oup.com/ismej/article/17/1/140/7474015 
+  - calculate MAGs abundance in a metagenomic dataset/community using RPKM, TPM, the mean raw read coverage of a MAG, and many other metrics. Usually the metrics are calculated in CheckM, MetaWRAP, CoverM
+  - escribes GCPM (genome copies per million reads) calculation based on TPM as it is implemented in MetaWRAP software
+  - MetaWRAP github page and noticed that "quant_bins" - module that calculates GCPM - have attracted some critique, which left without an answer from the creator
+
+- [reddit bioinfrmatis](https://www.reddit.com/r/bioinformatics/comments/1e8nptd/metrics_you_use_in_your_metagenomemags_analysis/?sort=top)
+  - Relative abundance is tricky because I think what researchers want to say is what fraction of the (prokaryotic) cells of community belong to a particular population. Yet we can’t really do that with a metagenome alone — not without sufficient metadata or spike-in standards.
+
+- [dereplicate MAGs? (metagenome assembly genomes)](https://www.reddit.com/r/bioinformatics/comments/or0r6z/how_to_dereplicate_mags_metagenome_assembly/?sort=top)
+  - ou should look at https://github.com/MrOlm/drep . Thats exactly the tool you need. Usually one takes all their bins and dereplicates them at 99% ANI for strain level dereplication or 95% at species level. For preserving the best quality, you would need to check yourself if the best genome survived the dereplication afaik. You probably want some sort of quality score and chose the one with the highest score out of the bins that got grouped as one by dereplication.
+
 ## Adquisición de Datos Ocurrencia
 
 ```{r}
@@ -1572,7 +1585,273 @@ make pipeline
 
 <!-- TODO: revisar los scripts y potencialmetne agregar make a los targets individuales, no a toda la pipe -->
 
+# Inspección de la Pipeline
 
+Esta sección documenta la estructura y dependencias de la pipeline de análisis, permitiendo verificar la integridad del flujo de trabajo antes de la ejecución.
+
+## Manifiesto de Targets
+
+El manifiesto muestra todos los targets definidos en la pipeline y sus comandos de ejecución:
+
+```{r}
+#| label: pipeline-manifest
+#| echo: true
+#| code-fold: show
+
+# Mostrar el manifiesto de la pipeline con comandos
+tar_manifest(fields = all_of("command")) |>
+  kable(
+    caption = "Manifiesto completo de la pipeline de análisis",
+    format = "html"
+  ) |>
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 10
+  ) |>
+  scroll_box(width = "100%", height = "500px")
+```
+
+## Grafo de Dependencias
+
+El grafo muestra las relaciones entre los diferentes componentes de la pipeline:
+
+```{r}
+#| label: pipeline-graph
+#| fig-width: 12
+#| fig-height: 8
+#| fig-cap: "Visualización interactiva de las dependencias de la pipeline"
+
+# Generar visualización interactiva del grafo de dependencias
+tar_visnetwork(
+  targets_only = TRUE,
+  label = c("time", "size", "branches"),
+  level_separation = 150,
+  degree_from = 1,
+  degree_to = 1
+)
+```
+
+::: {.callout-note}
+## Interpretación del Grafo
+
+- **Nodos verdes**: Targets actualizados y sin cambios
+- **Nodos azules**: Targets desactualizados que necesitan re-ejecución
+- **Nodos grises**: Targets que aún no se han ejecutado
+- **Flechas**: Indican dependencias entre targets
+
+El flujo natural va de izquierda a derecha, mostrando cómo los datos se transforman desde la adquisición hasta los resultados finales.
+:::
+
+## Resumen de Targets por Fase
+
+```{r}
+#| label: targets-by-phase
+
+# Obtener metadata de todos los targets
+tar_meta <- tar_meta(fields = c("name", "type", "bytes", "seconds"))
+
+# Clasificar targets por fase del análisis
+target_phases <- data.frame(
+  Target = tar_meta$name,
+  Tipo = tar_meta$type,
+  Tamaño = ifelse(!is.na(tar_meta$bytes), 
+                  paste(round(tar_meta$bytes / 1024^2, 2), "MB"),
+                  "N/A"),
+  Tiempo = ifelse(!is.na(tar_meta$seconds),
+                  paste(round(tar_meta$seconds, 2), "s"),
+                  "N/A"),
+  Fase = case_when(
+    grepl("obis|gbif|genome|taxonomic", tar_meta$name) ~ "1. Adquisición de Datos",
+    grepl("cleaned|combined", tar_meta$name) ~ "2. Limpieza de Datos",
+    grepl("environmental|spatial", tar_meta$name) ~ "3. Análisis Espacial",
+    grepl("habitat|model", tar_meta$name) ~ "4. Modelado",
+    grepl("database|marine_db", tar_meta$name) ~ "5. Integración de Base de Datos",
+    grepl("summary|report|export", tar_meta$name) ~ "6. Reportes y Exportación",
+    grepl("metagenomic|phylostrat|assembly", tar_meta$name) ~ "7. Análisis Metagenómico",
+    TRUE ~ "Otros"
+  )
+) |>
+  arrange(Fase, Target)
+
+# Mostrar tabla por fase
+kable(
+  target_phases,
+  caption = "Targets organizados por fase del análisis",
+  format = "html"
+) |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) |>
+  column_spec(5, bold = TRUE) |>
+  scroll_box(width = "100%", height = "600px")
+```
+
+## Estadísticas de Ejecución
+
+```{r}
+#| label: execution-stats
+
+# Obtener estadísticas de progreso
+progress_data <- tar_progress()
+
+if (!is.null(progress_data) && nrow(progress_data) > 0) {
+  
+  # Resumen por estado
+  progress_summary <- progress_data |>
+    count(progress) |>
+    mutate(
+      Porcentaje = round(n / sum(n) * 100, 1),
+      Estado = case_when(
+        progress == "built" ~ "✓ Completado",
+        progress == "skipped" ~ "⊙ Omitido (sin cambios)",
+        progress == "started" ~ "⟳ En progreso",
+        progress == "errored" ~ "✗ Error",
+        TRUE ~ progress
+      )
+    ) |>
+    select(Estado, Cantidad = n, Porcentaje)
+  
+  kable(
+    progress_summary,
+    caption = "Estado de ejecución de los targets",
+    format = "html"
+  ) |>
+    kable_styling(bootstrap_options = c("striped", "hover"))
+  
+  # Visualización de estado
+  if (nrow(progress_summary) > 0) {
+    ggplot(progress_summary, aes(x = "", y = Cantidad, fill = Estado)) +
+      geom_bar(stat = "identity", width = 1) +
+      coord_polar("y", start = 0) +
+      scale_fill_manual(
+        values = c(
+          "✓ Completado" = "#27ae60",
+          "⊙ Omitido (sin cambios)" = "#3498db", 
+          "⟳ En progreso" = "#f39c12",
+          "✗ Error" = "#e74c3c"
+        )
+      ) +
+      theme_void() +
+      labs(
+        title = "Distribución del Estado de Targets",
+        fill = "Estado"
+      ) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        legend.position = "right"
+      )
+  }
+  
+} else {
+  cat("⚠️ No hay datos de progreso disponibles. Ejecuta `tar_make()` primero.\n")
+}
+```
+
+## Análisis de Dependencias
+
+```{r}
+#| label: dependency-analysis
+
+# Analizar la red de dependencias
+deps <- tar_network(targets_only = TRUE)
+
+if (!is.null(deps) && nrow(deps$edges) > 0) {
+  
+  # Calcular métricas de red
+  dependency_metrics <- data.frame(
+    Métrica = c(
+      "Total de targets",
+      "Total de dependencias",
+      "Targets raíz (sin dependencias entrantes)",
+      "Targets finales (sin dependencias salientes)",
+      "Profundidad máxima de la pipeline"
+    ),
+    Valor = c(
+      length(unique(c(deps$edges$from, deps$edges$to))),
+      nrow(deps$edges),
+      sum(!unique(deps$edges$to) %in% deps$edges$from),
+      sum(!unique(deps$edges$from) %in% deps$edges$to),
+      "Calcular manualmente"  # Esto requeriría análisis de grafo más complejo
+    )
+  )
+  
+  kable(
+    dependency_metrics,
+    caption = "Métricas de la red de dependencias",
+    format = "html"
+  ) |>
+    kable_styling(bootstrap_options = c("striped", "hover"))
+  
+  # Targets más conectados
+  most_connected <- deps$edges |>
+    count(from, sort = TRUE) |>
+    head(10) |>
+    rename(Target = from, `Dependencias salientes` = n)
+  
+  kable(
+    most_connected,
+    caption = "Top 10 targets con más dependencias",
+    format = "html"
+  ) |>
+    kable_styling(bootstrap_options = c("striped", "hover"))
+}
+```
+
+::: {.callout-tip}
+## Uso Práctico
+
+Para verificar la pipeline antes de ejecutarla:
+
+1. **Revisar el manifiesto**: Asegúrate de que todos los comandos sean correctos
+2. **Inspeccionar el grafo**: Verifica que las dependencias sean lógicas
+3. **Validar sin ejecutar**: Usa `tar_validate()` para detectar errores sin correr la pipeline
+4. **Ejecución incremental**: `targets` solo re-ejecuta lo necesario
+
+```r
+# Validar la pipeline sin ejecutar
+tar_validate()
+
+# Ver qué targets están desactualizados
+tar_outdated()
+
+# Ejecutar solo un target específico
+tar_make(names = "cleaned_occurrences")
+```
+:::
+
+## Validación de la Pipeline
+
+```{r}
+#| label: pipeline-validation
+#| echo: true
+
+# Validar la estructura de la pipeline
+validation_result <- tryCatch({
+  tar_validate()
+  "✓ Pipeline válida - sin errores detectados"
+}, error = function(e) {
+  paste("✗ Errores detectados:", e$message)
+})
+
+cat(validation_result, "\n")
+```
+
+## Targets Desactualizados
+
+```{r}
+#| label: outdated-targets
+
+# Identificar targets que necesitan actualización
+outdated <- tar_outdated()
+
+if (length(outdated) > 0) {
+  cat("⚠️ Los siguientes targets necesitan actualización:\n\n")
+  for (target in outdated) {
+    cat("-", target, "\n")
+  }
+  cat("\nEjecuta `tar_make()` para actualizar estos targets.\n")
+} else {
+  cat("✓ Todos los targets están actualizados.\n")
+}
+```
 
 # Referencias
 
