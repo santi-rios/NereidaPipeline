@@ -53,3 +53,6 @@ reportes/informe_tecnico.qmd
 reportes/usos_cientificos.qmd
 tests/*
 todo.md
+# Keep rendered reports for GitHub Pages
+!reportes/analisis_biodiversidad_marina.html
+!index.html

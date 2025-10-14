@@ -53,4 +53,10 @@ clean: ## Limpiar archivos temporales y objetos de targets
 # 	git add docs/
 # 	git commit -m "Update GitHub Pages documentation"
 
+deploy-local: ## Test GitHub Pages deployment locally
+    @echo "📄 Copying HTML to root as index.html..."
+    @cp reportes/analisis_biodiversidad_marina.html index.html
+    @echo "✅ File ready: index.html"
+    @echo "   View locally: open index.html"
+
 .DEFAULT_GOAL := help
