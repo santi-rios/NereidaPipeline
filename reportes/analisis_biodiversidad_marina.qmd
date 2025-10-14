@@ -25,14 +25,13 @@ license:
   type: open-access
   url: https://www.gnu.org/licenses/fdl-1.3-standalone.html
 copyright: 
-  holder: Josiah Carberry
-  year: 2008
+  holder: Santiago Garcia-Rios
+  year: 2025
 citation: 
-  container-title: Journal of Psychoceramics
+  container-title: NereidaPipeline
   volume: 1
   issue: 1
-  doi: 10.5555/12345678
-funding: "The author received no specific funding for this work."
+  doi: 10.xxxx/xxxxxxxxx
 format:
   html:
     # title
@@ -60,7 +59,7 @@ format:
 execute: 
   echo: false
   warning: false
-  message: false
+  message: false 
 bibliography: "../referencias/referencias.bib"
 lang: es
 ---
@@ -1351,6 +1350,25 @@ Recomendaciones prácticas
 - Para entornos multi-lenguaje con uso intensivo de paquetes binarios (Python + R + herramientas C): Nix ofrece la solución más coherente y reproducible frente a la mezcla de conda + gestores del sistema.
 
 :::
+
+
+#### Base de datos con git-lfs
+
+Using Git LFS (Large File Storage) for a DuckDB file is a viable option if the file is large and frequently modified, and if you require version control for its changes.
+Reasons to consider Git LFS for DuckDB files:
+DuckDB files are often binary: Git is optimized for text-based files and handles binary files inefficiently, especially when they are large and undergo frequent changes.
+Version control of large files: Git LFS allows you to track changes to large DuckDB files without bloating the main Git repository. Instead of storing the full file in the repository history for every change, Git LFS stores pointers to the file and manages the actual file content on a separate LFS server.
+Faster cloning and fetching: When using Git LFS, only the pointers are downloaded during cloning and fetching, significantly reducing the time and bandwidth required compared to downloading the entire history of large binary files.
+Reduced repository size: The main Git repository remains smaller and more manageable, as the large DuckDB file content is stored externally.
+
+PERSPECTIVAS DE GIT-LFS
+
+Considerations and alternatives:
+LFS server setup: You need a Git LFS server to store the actual file content. This is often provided by platforms like GitHub, GitLab, or Bitbucket, but you may need to manage your own if using a self-hosted Git solution.
+Quota limitations: Cloud-based Git LFS services often have storage and bandwidth quotas, which might be a factor if your DuckDB files are extremely large or frequently accessed by many users.
+DVC (Data Version Control): For more complex data management needs, especially in data science and machine learning contexts, DVC offers a more specialized solution for versioning data and models, including large files.
+External storage and releases: If your DuckDB files are exceptionally large or not truly part of your codebase's direct version control, consider storing them externally (e.g., cloud storage, shared drives) and linking to them or managing them through release processes.
+In summary: If you have large DuckDB files that require version control within your Git repository and are subject to frequent modifications, Git LFS provides an effective way to manage them without the performance and storage overhead of traditional Git. Evaluate your specific needs and consider potential alternatives like DVC for more advanced data versioning requirements.
 
 
 ## Conservación y Evolucón
