@@ -52,3 +52,4 @@ data/*
 reportes/informe_tecnico.qmd
 reportes/usos_cientificos.qmd
 tests/*
+todo.md
