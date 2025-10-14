@@ -569,3 +569,6 @@ rix shell
 | 📦 `CITATION.cff` | Archivo para que GitHub muestre cómo citar tu proyecto (útil si es científico). |
 
 ---
+
+
+
