@@ -1062,3 +1062,113 @@ plot_retrieval_summary <- function(quality_data, out_dir = "data/processed/genom
   
   return(p)
 }
+
+#' @title Read Metagenomic Metadata
+#' @description Reads the metadata file for the metagenomic samples.
+#' @param metadata_file Path to the metadata file.
+#' @return A data frame with the metadata.
+#' @export
+read_metagenomic_metadata <- function(metadata_file) {
+  if (!file.exists(metadata_file)) {
+    stop("Metadata file not found: ", metadata_file)
+  }
+  read.csv(metadata_file)
+}
+
+#' @title Download SRA Data
+#' @description Placeholder function to download SRA data.
+#' @param sra_ids A vector of SRA IDs to download.
+#' @param output_dir The directory where the data will be downloaded.
+#' @return A vector with the paths to the downloaded files.
+#' @export
+download_sra_data <- function(sra_ids, output_dir = "data/raw/metagenomic") {
+  # This is a placeholder.
+  # In a real scenario, this function would use tools like SRA Toolkit
+  # to download the data.
+  # For now, it will just create dummy files.
+
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+
+  message("This is a placeholder function. No real data will be downloaded.")
+  message("Assuming data is manually placed in: ", output_dir)
+
+  # Create dummy file paths for the targets pipeline
+  file_paths <- file.path(output_dir, paste0(sra_ids, "_R1.fastq.gz"))
+  
+  # Create dummy files to be tracked by targets
+  for (file in file_paths) {
+    if (!file.exists(file)) {
+      file.create(file)
+    }
+  }
+  
+  return(file_paths)
+}
+
+#' @title Run FastQC for quality control
+#' @description This function runs FastQC on the raw sequencing reads.
+#' @param fastq_files A character vector of paths to the FASTQ files.
+#' @param qc_output_dir The directory where FastQC reports will be saved.
+#' @return A character vector of paths to the generated FastQC zip files.
+#' @export
+run_fastqc <- function(fastq_files, qc_output_dir = "data/processed/fastqc_reports") {
+  if (!requireNamespace("fastqcr", quietly = TRUE)) {
+    stop("Package 'fastqcr' is required. Please install it via install.packages('fastqcr').")
+  }
+
+  if (length(fastq_files) == 0) {
+    stop("No FASTQ files provided to run_fastqc.")
+  }
+
+  # The fastqc function works on a directory of fastq files.
+  # We'll get the directory from the file paths.
+  fastq_dir <- unique(dirname(fastq_files))
+  if (length(fastq_dir) > 1) {
+    # If files are in multiple directories, copy them to a temporary one
+    # This is a workaround for fastqcr::fastqc needing one input directory
+    temp_fastq_dir <- file.path(qc_output_dir, "temp_fastq")
+    if (!dir.exists(temp_fastq_dir)) dir.create(temp_fastq_dir, recursive = TRUE)
+    file.copy(fastq_files, temp_fastq_dir)
+    fastq_dir <- temp_fastq_dir
+  }
+
+  if (!dir.exists(qc_output_dir)) {
+    dir.create(qc_output_dir, recursive = TRUE)
+  }
+
+  # Run FastQC
+  fastqcr::fastqc(
+    fq.dir = fastq_dir,
+    qc.dir = qc_output_dir,
+    threads = 4 # Use 4 threads as an example
+  )
+
+  # Return the paths to the generated .zip files for tracking
+  list.files(qc_output_dir, pattern = "_fastqc\\.zip$", full.names = TRUE)
+}
+
+#' @title Aggregate FastQC reports
+#' @description This function aggregates multiple FastQC reports into a single object.
+#' @param qc_files A character vector of paths to the FastQC zip files.
+#' @param qc_summary_path Path to save the aggregated QC summary report.
+#' @return The aggregated QC data frame.
+#' @export
+aggregate_fastqc_reports <- function(qc_files, qc_summary_path = "data/processed/fastqc_summary.csv") {
+    if (!requireNamespace("fastqcr", quietly = TRUE)) {
+    stop("Package 'fastqcr' is required. Please install it via install.packages('fastqcr').")
+  }
+  
+  qc_dir <- unique(dirname(qc_files))
+   if (length(qc_dir) > 1) {
+    stop("All FastQC zip files must be in the same directory.")
+  }
+
+  aggregated_qc <- fastqcr::qc_aggregate(qc.dir = qc_dir)
+  
+  # Save the summary table
+  write.csv(aggregated_qc, qc_summary_path, row.names = FALSE)
+  
+  return(qc_summary_path)
+}

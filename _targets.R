@@ -924,6 +924,23 @@ list(
     reporte_biodiversidad,
     path = "./reportes/analisis_biodiversidad_marina.qmd",
     quiet = FALSE
-  )
+  ),
+  
+  # === QUALITY CONTROL PHASE ===
+  # 4. Run FastQC for quality control
+  # This target takes the raw FASTQ files and runs FastQC on them.
+  # It returns the paths to the generated FastQC zip files.
+  tar_target(
+    fastqc_reports,
+    run_fastqc(raw_metagenomic_files),
+    format = "file"
+  ),
 
+  # 5. Aggregate FastQC reports
+  # This target aggregates the FastQC reports into a single summary file.
+  tar_target(
+    fastqc_summary,
+    aggregate_fastqc_reports(fastqc_reports),
+    format = "file"
+  )
 )

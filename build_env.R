@@ -64,7 +64,8 @@ targets_packages <- c(
   "kableExtra",  # For nice tables in reports
   # packages for quarto code-linking
   "rmarkdown", "downlit", "xml2",
-  "visNetwork"
+  "visNetwork",
+  "fastqcr"
 )
 
 # Optional packages (only if available)
