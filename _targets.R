@@ -63,6 +63,32 @@ list(
     create_phyloseq_object(otu_file, tax_file, meta_file, tree_file)
   ),
 
+  # 3. Calculate and plot alpha diversity
+  tar_target(
+    alpha_diversity_results,
+    calculate_alpha_diversity(phyloseq_object),
+    format = "file"
+  ),
+
+  tar_target(
+    alpha_diversity_shannon_plot,
+    plot_alpha_diversity(alpha_diversity_results, metric = "Shannon", group_variable = "Group"),
+    format = "file"
+  ),
+
+  # 4. Calculate and plot beta diversity
+  tar_target(
+    beta_diversity_results,
+    calculate_beta_diversity(phyloseq_object),
+    format = "file"
+  ),
+
+  tar_target(
+    beta_diversity_plot,
+    plot_beta_diversity(beta_diversity_results),
+    format = "file"
+  ),
+
   # === DATA ACQUISITION PHASE ===
   
   # 1. Collect occurrence data from multiple sources

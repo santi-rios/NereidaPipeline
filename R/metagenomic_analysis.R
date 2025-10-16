@@ -1084,165 +1084,148 @@ create_phyloseq_object <- function(otu_file, tax_file, meta_file, tree_file) {
   return(physeq)
 }
 
-
-#' @title Download SRA Data
-#' @description Downloads FASTQ data from SRA using the SRA Toolkit.
-#' @param sra_ids A vector of SRA Run IDs to download.
-#' @param output_dir The directory where the data will be downloaded.
-#' @return A vector with the paths to the downloaded files.
+#' @title Calculate Alpha Diversity
+#' @description Calculates various alpha diversity metrics for each sample.
+#' @param physeq A phyloseq object.
+#' @return A data frame with alpha diversity metrics for each sample.
 #' @export
-download_sra_data <- function(sra_ids, output_dir = "data/raw/metagenomic") {
-  # This function requires the SRA Toolkit to be installed and in the system's PATH.
-  # Check if fastq-dump command is available
-  if (Sys.which("fastq-dump") == "") {
-    stop(
-      "SRA Toolkit not found. Please install it and ensure 'fastq-dump' is in your PATH.\n",
-      "Installation (Debian/Ubuntu): sudo apt-get install sra-toolkit"
-    )
-  }
-
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-  }
-
-  message("Downloading SRA data. This may take a significant amount of time...")
-
-  final_file_paths <- c()
-
-  for (sra_id in sra_ids) {
-    # Define expected output file. We'll assume single-end reads for now based on metadata.
-    # The tool will create _1.fastq.gz for paired-end, but our metadata points to one file.
-    expected_file <- file.path(output_dir, paste0(sra_id, "_1.fastq.gz"))
-    
-    # Also check for the single-end naming convention
-    expected_file_single <- file.path(output_dir, paste0(sra_id, ".fastq.gz"))
-
-    # If the file already exists, skip downloading
-    if (file.exists(expected_file) || file.exists(expected_file_single)) {
-      message("✓ File for ", sra_id, " already exists. Skipping download.")
-      if(file.exists(expected_file)) {
-        final_file_paths <- c(final_file_paths, expected_file)
-      } else {
-        final_file_paths <- c(final_file_paths, expected_file_single)
-      }
-      next
-    }
-
-    message("-> Downloading ", sra_id, "...")
-    
-    # Use system2 to call fastq-dump
-    # --split-files: creates _1.fastq, _2.fastq etc. for paired-end reads
-    # --gzip: compresses the output
-    # -O: specifies the output directory
-    tryCatch({
-      system2(
-        "fastq-dump",
-        args = c(
-          "--split-files",
-          "--gzip",
-          "-O", output_dir,
-          sra_id
-        ),
-        stdout = TRUE, # Capture standard output
-        stderr = TRUE  # Capture standard error
-      )
-      
-      # Verify download
-      if (file.exists(expected_file) || file.exists(expected_file_single)) {
-        message("✓ Successfully downloaded ", sra_id)
-        if(file.exists(expected_file)) {
-          final_file_paths <- c(final_file_paths, expected_file)
-        } else {
-          final_file_paths <- c(final_file_paths, expected_file_single)
-        }
-      } else {
-         # Sometimes fastq-dump creates files without the _1 suffix for single-end reads
-         # Let's rename it to match our convention for consistency
-         unsplit_file <- file.path(output_dir, paste0(sra_id, ".fastq.gz"))
-         if (file.exists(unsplit_file)) {
-            file.rename(unsplit_file, expected_file)
-            message("✓ Successfully downloaded and renamed ", sra_id)
-            final_file_paths <- c(final_file_paths, expected_file)
-         } else {
-            warning("✗ Download for ", sra_id, " may have failed. Expected file not found.")
-         }
-      }
-
-    }, error = function(e) {
-      warning("✗ Failed to download ", sra_id, ": ", e$message)
-    })
+calculate_alpha_diversity <- function(physeq) {
+  if (!requireNamespace("picante", quietly = TRUE)) {
+    stop("Package 'picante' is required for Phylogenetic Diversity calculation.")
   }
   
-  # The file names in the metadata are CORAL_001_R1.fastq.gz, let's rename them
-  # to match what the pipeline expects.
-  # ERR2043338 -> CORAL_001_R1.fastq.gz
-  # ERR2043339 -> CORAL_002_R1.fastq.gz
+  # Calculate standard richness estimates
+  richness_metrics <- phyloseq::estimate_richness(physeq, measures = c("Observed", "Chao1", "ACE", "Shannon", "Simpson"))
   
-  # This part is tricky because it relies on the metadata.
-  # For now, let's assume the downloaded files are what we need.
-  # The pipeline might need adjustment if file names are a problem.
+  # Calculate Faith's Phylogenetic Diversity (PD)
+  # picante::pd requires a sample-by-species matrix and a phylo tree
+  otu_matrix <- as.data.frame(t(phyloseq::otu_table(physeq)))
+  phylo_tree <- phyloseq::phy_tree(physeq)
   
-  return(final_file_paths)
+  # Ensure the OTU table and tree labels match
+  matched_data <- picante::match.phylo.comm(phylo_tree, otu_matrix)
+  
+  pd_metrics <- picante::pd(matched_data$comm, matched_data$phy, include.root = FALSE)
+  
+  # Combine all metrics
+  # Add sample metadata
+  sample_vars <- as(phyloseq::sample_data(physeq), "data.frame")
+  
+  # Combine all metrics into one data frame
+  alpha_diversity <- cbind(richness_metrics, pd_metrics, sample_vars)
+  
+  # Save the results
+  write.csv(alpha_diversity, "data/processed/alpha_diversity.csv", row.names = TRUE)
+  
+  return("data/processed/alpha_diversity.csv")
 }
 
-
-#' @title Run FastQC for quality control
-#' @description This function runs FastQC on the raw sequencing reads.
-#' @param fastq_files A character vector of paths to the FASTQ files.
-#' @param qc_output_dir The directory where FastQC reports will be saved.
-#' @return A character vector of paths to the generated FastQC zip files.
+#' @title Plot Alpha Diversity
+#' @description Creates and saves a boxplot of alpha diversity metrics.
+#' @param alpha_diversity_file Path to the alpha diversity CSV file.
+#' @param metric The diversity metric to plot (e.g., "Shannon").
+#' @param group_variable The metadata column to group by (e.g., "Group").
+#' @return Path to the saved plot.
 #' @export
-run_fastqc <- function(fastq_files, qc_output_dir = "data/processed/fastqc_reports") {
-  if (!requireNamespace("fastqcr", quietly = TRUE)) {
-    stop("Package 'fastqcr' is required. Please install it via install.packages('fastqcr').")
+plot_alpha_diversity <- function(alpha_diversity_file, metric = "Shannon", group_variable = "Group") {
+  library(ggplot2)
+  
+  alpha_diversity <- read.csv(alpha_diversity_file, row.names = 1)
+  
+  # Check if the specified metric and group variable exist
+  if (!metric %in% names(alpha_diversity)) {
+    stop("Metric '", metric, "' not found in the alpha diversity data.")
   }
-
-  if (length(fastq_files) == 0) {
-    stop("No FASTQ files provided to run_fastqc.")
+  if (!group_variable %in% names(alpha_diversity)) {
+    stop("Group variable '", group_variable, "' not found in the alpha diversity data.")
   }
+  
+  p <- ggplot(alpha_diversity, aes_string(x = group_variable, y = metric, fill = group_variable)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.2, alpha = 0.7) +
+    labs(
+      title = paste("Alpha Diversity:", metric),
+      x = group_variable,
+      y = metric
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
+  
+  # Save the plot
+  plot_path <- file.path("data/processed", paste0("alpha_diversity_", tolower(metric), "_plot.png"))
+  ggsave(plot_path, plot = p, width = 8, height = 6)
+  
+  return(plot_path)
+}
 
-  # The fastqc function works on a directory of fastq files.
-  # We'll get the directory from the file paths.
-  fastq_dir <- unique(dirname(fastq_files))
-  if (length(fastq_dir) > 1) {
-    stop("All FASTQ files must be in the same directory to run fastqc.")
+#' @title Calculate Beta Diversity and Perform PERMANOVA
+#' @description Performs ordination (NMDS) and a PERMANOVA test.
+#' @param physeq A phyloseq object.
+#' @return Path to an RDS file containing the ordination and PERMANOVA results.
+#' @export
+calculate_beta_diversity <- function(physeq) {
+  if (!requireNamespace("vegan", quietly = TRUE)) {
+    stop("Package 'vegan' is required for this function.")
   }
-
-  if (!dir.exists(qc_output_dir)) {
-    dir.create(qc_output_dir, recursive = TRUE)
-  }
-
-  # Run FastQC
-  fastqcr::fastqc(
-    fq.dir = fastq_dir,
-    qc.dir = qc_output_dir,
-    threads = 4 # Use 4 threads as an example
+  
+  # Set seed for reproducible rarefaction
+  set.seed(123)
+  
+  # Rarefy data to even depth to normalize for sequencing effort
+  physeq_rare <- phyloseq::rarefy_even_depth(physeq, sample.size = min(phyloseq::sample_sums(physeq)), rngseed = TRUE)
+  
+  # Calculate Bray-Curtis distance matrix
+  dist_bray <- phyloseq::distance(physeq_rare, method = "bray")
+  
+  # Perform NMDS ordination
+  ordination_nmds <- phyloseq::ordinate(physeq_rare, method = "NMDS", distance = dist_bray)
+  
+  # Perform PERMANOVA test using the 'Group' variable from metadata
+  metadata_df <- as(phyloseq::sample_data(physeq_rare), "data.frame")
+  permanova_result <- vegan::adonis2(dist_bray ~ Group, data = metadata_df)
+  
+  # Combine results into a list
+  beta_diversity_results <- list(
+    ordination = ordination_nmds,
+    permanova = permanova_result,
+    rarefied_phyloseq = physeq_rare
   )
-
-  # Return the paths to the generated .zip files for tracking
-  list.files(qc_output_dir, pattern = "_fastqc\\.zip$", full.names = TRUE)
+  
+  # Save the results object
+  results_path <- "data/processed/beta_diversity_results.rds"
+  saveRDS(beta_diversity_results, file = results_path)
+  
+  return(results_path)
 }
 
-#' @title Aggregate FastQC reports
-#' @description This function aggregates multiple FastQC reports into a single object.
-#' @param qc_files A character vector of paths to the FastQC zip files.
-#' @param qc_summary_path Path to save the aggregated QC summary report.
-#' @return The aggregated QC data frame.
+#' @title Plot Beta Diversity Ordination
+#' @description Creates and saves an NMDS plot.
+#' @param beta_results_file Path to the RDS file from calculate_beta_diversity.
+#' @return Path to the saved plot.
 #' @export
-aggregate_fastqc_reports <- function(qc_files, qc_summary_path = "data/processed/fastqc_summary.csv") {
-    if (!requireNamespace("fastqcr", quietly = TRUE)) {
-    stop("Package 'fastqcr' is required. Please install it via install.packages('fastqcr').")
-  }
+plot_beta_diversity <- function(beta_results_file) {
+  library(ggplot2)
   
-  qc_dir <- unique(dirname(qc_files))
-   if (length(qc_dir) > 1) {
-    stop("All FastQC zip files must be in the same directory.")
-  }
-
-  aggregated_qc <- fastqcr::qc_aggregate(qc.dir = qc_dir)
+  beta_results <- readRDS(beta_results_file)
   
-  # Save the summary table
-  write.csv(aggregated_qc, qc_summary_path, row.names = FALSE)
+  # Create the plot using plot_ordination
+  p <- phyloseq::plot_ordination(
+    physeq = beta_results$rarefied_phyloseq,
+    ordination = beta_results$ordination,
+    color = "Group" # Color points by the 'Group' variable
+  ) +
+    geom_point(size = 4, alpha = 0.8) +
+    stat_ellipse(aes(group = Group), type = "t") + # Add ellipses for each group
+    labs(
+      title = "NMDS Ordination (Bray-Curtis)",
+      subtitle = paste("PERMANOVA p-value:", round(beta_results$permanova$`Pr(>F)`[1], 4)),
+      color = "Sample Group"
+    ) +
+    theme_minimal()
   
-  return(qc_summary_path)
+  # Save the plot
+  plot_path <- "data/processed/beta_diversity_nmds_plot.png"
+  ggsave(plot_path, plot = p, width = 8, height = 7)
+  
+  return(plot_path)
 }
