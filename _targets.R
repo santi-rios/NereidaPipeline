@@ -72,8 +72,7 @@ list(
 
   tar_target(
     alpha_diversity_shannon_plot,
-    plot_alpha_diversity(alpha_diversity_results, metric = "Shannon", group_variable = "Group"),
-    format = "file"
+    plot_alpha_diversity(alpha_diversity_results, metric = "Shannon", group_variable = "Group")
   ),
 
   # 4. Calculate and plot beta diversity
@@ -85,8 +84,7 @@ list(
 
   tar_target(
     beta_diversity_plot,
-    plot_beta_diversity(beta_diversity_results),
-    format = "file"
+    plot_beta_diversity(beta_diversity_results)
   ),
 
   # === DATA ACQUISITION PHASE ===

@@ -1121,18 +1121,18 @@ calculate_alpha_diversity <- function(physeq) {
 }
 
 #' @title Plot Alpha Diversity
-#' @description Creates and saves a boxplot of alpha diversity metrics.
+#' @description Creates an interactive boxplot of alpha diversity metrics.
 #' @param alpha_diversity_file Path to the alpha diversity CSV file.
 #' @param metric The diversity metric to plot (e.g., "Shannon").
 #' @param group_variable The metadata column to group by (e.g., "Group").
-#' @return Path to the saved plot.
+#' @return An interactive plotly object.
 #' @export
 plot_alpha_diversity <- function(alpha_diversity_file, metric = "Shannon", group_variable = "Group") {
   library(ggplot2)
+  library(plotly)
   
   alpha_diversity <- read.csv(alpha_diversity_file, row.names = 1)
   
-  # Check if the specified metric and group variable exist
   if (!metric %in% names(alpha_diversity)) {
     stop("Metric '", metric, "' not found in the alpha diversity data.")
   }
@@ -1141,7 +1141,7 @@ plot_alpha_diversity <- function(alpha_diversity_file, metric = "Shannon", group
   }
   
   p <- ggplot(alpha_diversity, aes_string(x = group_variable, y = metric, fill = group_variable)) +
-    geom_boxplot() +
+    geom_boxplot(alpha = 0.6) +
     geom_jitter(width = 0.2, alpha = 0.7) +
     labs(
       title = paste("Alpha Diversity:", metric),
@@ -1151,11 +1151,8 @@ plot_alpha_diversity <- function(alpha_diversity_file, metric = "Shannon", group
     theme_minimal() +
     theme(legend.position = "none")
   
-  # Save the plot
-  plot_path <- file.path("data/processed", paste0("alpha_diversity_", tolower(metric), "_plot.png"))
-  ggsave(plot_path, plot = p, width = 8, height = 6)
-  
-  return(plot_path)
+  # Convert to plotly and return the object
+  ggplotly(p)
 }
 
 #' @title Calculate Beta Diversity and Perform PERMANOVA
@@ -1199,23 +1196,23 @@ calculate_beta_diversity <- function(physeq) {
 }
 
 #' @title Plot Beta Diversity Ordination
-#' @description Creates and saves an NMDS plot.
+#' @description Creates an interactive NMDS plot.
 #' @param beta_results_file Path to the RDS file from calculate_beta_diversity.
-#' @return Path to the saved plot.
+#' @return An interactive plotly object.
 #' @export
 plot_beta_diversity <- function(beta_results_file) {
   library(ggplot2)
+  library(plotly)
   
   beta_results <- readRDS(beta_results_file)
   
-  # Create the plot using plot_ordination
   p <- phyloseq::plot_ordination(
     physeq = beta_results$rarefied_phyloseq,
     ordination = beta_results$ordination,
-    color = "Group" # Color points by the 'Group' variable
+    color = "Group"
   ) +
     geom_point(size = 4, alpha = 0.8) +
-    stat_ellipse(aes(group = Group), type = "t") + # Add ellipses for each group
+    stat_ellipse(aes(group = Group), type = "t") +
     labs(
       title = "NMDS Ordination (Bray-Curtis)",
       subtitle = paste("PERMANOVA p-value:", round(beta_results$permanova$`Pr(>F)`[1], 4)),
@@ -1223,9 +1220,6 @@ plot_beta_diversity <- function(beta_results_file) {
     ) +
     theme_minimal()
   
-  # Save the plot
-  plot_path <- "data/processed/beta_diversity_nmds_plot.png"
-  ggsave(plot_path, plot = p, width = 8, height = 7)
-  
-  return(plot_path)
+  # Convert to plotly and return the object
+  ggplotly(p)
 }
