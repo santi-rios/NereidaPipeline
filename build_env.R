@@ -48,6 +48,7 @@ targets_packages <- c(
   ## bioconductor
   "BiocManager",
   "Biostrings",
+  "phyloseq",
   # "biomaRt",
   "biomartr",
   # "BarcodingR",

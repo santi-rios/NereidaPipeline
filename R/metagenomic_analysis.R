@@ -1063,49 +1063,128 @@ plot_retrieval_summary <- function(quality_data, out_dir = "data/processed/genom
   return(p)
 }
 
-#' @title Read Metagenomic Metadata
-#' @description Reads the metadata file for the metagenomic samples.
-#' @param metadata_file Path to the metadata file.
-#' @return A data frame with the metadata.
+#' @title Create Phyloseq Object
+#' @description Loads microbiome data from flat files and creates a phyloseq object.
+#' @param otu_file Path to the OTU table.
+#' @param tax_file Path to the taxonomy table.
+#' @param meta_file Path to the sample metadata.
+#' @param tree_file Path to the phylogenetic tree.
+#' @return A phyloseq object.
 #' @export
-read_metagenomic_metadata <- function(metadata_file) {
-  if (!file.exists(metadata_file)) {
-    stop("Metadata file not found: ", metadata_file)
-  }
-  read.csv(metadata_file)
+create_phyloseq_object <- function(otu_file, tax_file, meta_file, tree_file) {
+  # Import the data
+  otu_table <- phyloseq::otu_table(read.delim(otu_file, row.names = 1), taxa_are_rows = TRUE)
+  taxonomy_table <- phyloseq::tax_table(as.matrix(read.delim(tax_file, row.names = 1)))
+  metadata_table <- phyloseq::sample_data(read.delim(meta_file, row.names = 1))
+  phylo_tree <- phyloseq::read_tree(tree_file)
+
+  # Combine into a phyloseq object
+  physeq <- phyloseq::phyloseq(otu_table, taxonomy_table, metadata_table, phylo_tree)
+
+  return(physeq)
 }
 
+
 #' @title Download SRA Data
-#' @description Placeholder function to download SRA data.
-#' @param sra_ids A vector of SRA IDs to download.
+#' @description Downloads FASTQ data from SRA using the SRA Toolkit.
+#' @param sra_ids A vector of SRA Run IDs to download.
 #' @param output_dir The directory where the data will be downloaded.
 #' @return A vector with the paths to the downloaded files.
 #' @export
 download_sra_data <- function(sra_ids, output_dir = "data/raw/metagenomic") {
-  # This is a placeholder.
-  # In a real scenario, this function would use tools like SRA Toolkit
-  # to download the data.
-  # For now, it will just create dummy files.
+  # This function requires the SRA Toolkit to be installed and in the system's PATH.
+  # Check if fastq-dump command is available
+  if (Sys.which("fastq-dump") == "") {
+    stop(
+      "SRA Toolkit not found. Please install it and ensure 'fastq-dump' is in your PATH.\n",
+      "Installation (Debian/Ubuntu): sudo apt-get install sra-toolkit"
+    )
+  }
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
 
-  message("This is a placeholder function. No real data will be downloaded.")
-  message("Assuming data is manually placed in: ", output_dir)
+  message("Downloading SRA data. This may take a significant amount of time...")
 
-  # Create dummy file paths for the targets pipeline
-  file_paths <- file.path(output_dir, paste0(sra_ids, "_R1.fastq.gz"))
-  
-  # Create dummy files to be tracked by targets
-  for (file in file_paths) {
-    if (!file.exists(file)) {
-      file.create(file)
+  final_file_paths <- c()
+
+  for (sra_id in sra_ids) {
+    # Define expected output file. We'll assume single-end reads for now based on metadata.
+    # The tool will create _1.fastq.gz for paired-end, but our metadata points to one file.
+    expected_file <- file.path(output_dir, paste0(sra_id, "_1.fastq.gz"))
+    
+    # Also check for the single-end naming convention
+    expected_file_single <- file.path(output_dir, paste0(sra_id, ".fastq.gz"))
+
+    # If the file already exists, skip downloading
+    if (file.exists(expected_file) || file.exists(expected_file_single)) {
+      message("✓ File for ", sra_id, " already exists. Skipping download.")
+      if(file.exists(expected_file)) {
+        final_file_paths <- c(final_file_paths, expected_file)
+      } else {
+        final_file_paths <- c(final_file_paths, expected_file_single)
+      }
+      next
     }
+
+    message("-> Downloading ", sra_id, "...")
+    
+    # Use system2 to call fastq-dump
+    # --split-files: creates _1.fastq, _2.fastq etc. for paired-end reads
+    # --gzip: compresses the output
+    # -O: specifies the output directory
+    tryCatch({
+      system2(
+        "fastq-dump",
+        args = c(
+          "--split-files",
+          "--gzip",
+          "-O", output_dir,
+          sra_id
+        ),
+        stdout = TRUE, # Capture standard output
+        stderr = TRUE  # Capture standard error
+      )
+      
+      # Verify download
+      if (file.exists(expected_file) || file.exists(expected_file_single)) {
+        message("✓ Successfully downloaded ", sra_id)
+        if(file.exists(expected_file)) {
+          final_file_paths <- c(final_file_paths, expected_file)
+        } else {
+          final_file_paths <- c(final_file_paths, expected_file_single)
+        }
+      } else {
+         # Sometimes fastq-dump creates files without the _1 suffix for single-end reads
+         # Let's rename it to match our convention for consistency
+         unsplit_file <- file.path(output_dir, paste0(sra_id, ".fastq.gz"))
+         if (file.exists(unsplit_file)) {
+            file.rename(unsplit_file, expected_file)
+            message("✓ Successfully downloaded and renamed ", sra_id)
+            final_file_paths <- c(final_file_paths, expected_file)
+         } else {
+            warning("✗ Download for ", sra_id, " may have failed. Expected file not found.")
+         }
+      }
+
+    }, error = function(e) {
+      warning("✗ Failed to download ", sra_id, ": ", e$message)
+    })
   }
   
-  return(file_paths)
+  # The file names in the metadata are CORAL_001_R1.fastq.gz, let's rename them
+  # to match what the pipeline expects.
+  # ERR2043338 -> CORAL_001_R1.fastq.gz
+  # ERR2043339 -> CORAL_002_R1.fastq.gz
+  
+  # This part is tricky because it relies on the metadata.
+  # For now, let's assume the downloaded files are what we need.
+  # The pipeline might need adjustment if file names are a problem.
+  
+  return(final_file_paths)
 }
+
 
 #' @title Run FastQC for quality control
 #' @description This function runs FastQC on the raw sequencing reads.
@@ -1126,12 +1205,7 @@ run_fastqc <- function(fastq_files, qc_output_dir = "data/processed/fastqc_repor
   # We'll get the directory from the file paths.
   fastq_dir <- unique(dirname(fastq_files))
   if (length(fastq_dir) > 1) {
-    # If files are in multiple directories, copy them to a temporary one
-    # This is a workaround for fastqcr::fastqc needing one input directory
-    temp_fastq_dir <- file.path(qc_output_dir, "temp_fastq")
-    if (!dir.exists(temp_fastq_dir)) dir.create(temp_fastq_dir, recursive = TRUE)
-    file.copy(fastq_files, temp_fastq_dir)
-    fastq_dir <- temp_fastq_dir
+    stop("All FASTQ files must be in the same directory to run fastqc.")
   }
 
   if (!dir.exists(qc_output_dir)) {

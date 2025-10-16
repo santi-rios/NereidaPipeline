@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
 })
 
 # Conditional loading of optional packages
-optional_packages <- c("biomartr", "wikitaxa", "prism", "myTAI", "geotargets")
+optional_packages <- c("biomartr", "wikitaxa", "prism", "myTAI", "geotargets", "fastqcr")
 for (pkg in optional_packages) {
   if (requireNamespace(pkg, quietly = TRUE)) {
     message("Loaded optional package: ", pkg)
@@ -48,6 +48,20 @@ STUDY_REGION <- list(
 
 # Enhanced Marine Biodiversity Research Pipeline
 list(
+
+  # === MICROBIOME ANALYSIS PHASE ===
+
+  # 1. Define file paths for microbiome data
+  tar_target(otu_file, "data/otutab.txt", format = "file"),
+  tar_target(tax_file, "data/taxonomy.txt", format = "file"),
+  tar_target(meta_file, "data/metadata.tsv", format = "file"),
+  tar_target(tree_file, "data/otus.tree", format = "file"),
+
+  # 2. Create a phyloseq object
+  tar_target(
+    phyloseq_object,
+    create_phyloseq_object(otu_file, tax_file, meta_file, tree_file)
+  ),
 
   # === DATA ACQUISITION PHASE ===
   
@@ -163,241 +177,7 @@ list(
       }
     }
   ),
-  # === METAGENOMIC ANALYSIS PHASE ===
-  # 1. Check availability across databases
-  tar_target(
-    genome_availability,
-    {
-      message("Checking genome availability across databases...")
-      check_multi_database_availability(MARINE_SPECIES)
-    }
-  ),
   
-  # 2. Retrieve genomic sequences with smart fallback
-  tar_target(
-    genomic_sequences,
-    {
-      message("Starting smart genomic sequence retrieval...")
-      
-      retrieve_complete_metagenomic_data_smart(
-        species_list = MARINE_SPECIES,
-        data_types = c("proteome", "cds", "gff"),
-        out_dir = "data/raw/genomic",
-        try_databases = c("refseq", "genbank")
-      )
-    }
-  ),
-  
-  # 3. Create summary report of retrieved data
-  tar_target(
-    genomic_summary_report,
-    {
-      if (!is.null(genomic_sequences)) {
-        # Create summary data frame
-        summary_data <- data.frame(
-          species = character(),
-          database = character(),
-          proteome = logical(),
-          cds = logical(),
-          gff = logical(),
-          stringsAsFactors = FALSE
-        )
-        
-        for (species in MARINE_SPECIES) {
-          if (!is.null(genomic_sequences[[species]])) {
-            sp_data <- genomic_sequences[[species]]
-            summary_data <- rbind(summary_data, data.frame(
-              species = species,
-              database = sp_data$database_used %||% "none",
-              proteome = !is.null(sp_data$proteome) && sp_data$proteome$status == "success",
-              cds = !is.null(sp_data$cds) && sp_data$cds$status == "success",
-              gff = !is.null(sp_data$gff) && sp_data$gff$status == "success",
-              stringsAsFactors = FALSE
-            ))
-          }
-        }
-        
-        # Save summary
-        write.csv(
-          summary_data,
-          "data/processed/genomic/retrieval_summary.csv",
-          row.names = FALSE
-        )
-        
-        summary_data
-      }
-    }
-  ),
-  # 4. Assess data quality
-  tar_target(
-    genomic_quality,
-    {
-      if (!is.null(genomic_sequences)) {
-        assess_genomic_data_quality(genomic_sequences)
-      }
-    }
-  ),
-  
-  # 5. Visualize retrieval summary
-  tar_target(
-    genomic_viz,
-    {
-      if (!is.null(genomic_quality)) {
-        plot_retrieval_summary(
-          genomic_quality,
-          out_dir = "data/processed/genomic"
-        )
-      }
-    }
-  ),
-  # # 2. Get assembly statistics for quality assessment
-  # tar_target(
-  #   assembly_statistics,
-  #   {
-  #     message("Retrieving assembly statistics...")
-      
-  #     stats <- get_assembly_stats(
-  #       species_list = MARINE_SPECIES,
-  #       db = "refseq",
-  #       out_dir = "data/raw/genomic/assembly_stats"
-  #     )
-      
-  #     if (!is.null(stats) && nrow(stats) > 0) {
-  #       # Assess quality
-  #       quality_assessment <- assess_assembly_quality(
-  #         assembly_stats = stats,
-  #         quality_threshold = list(
-  #           min_N50 = 10000,
-  #           max_gaps = 1000,
-  #           min_completeness = 0.9
-  #         )
-  #       )
-        
-  #       # Save quality assessment
-  #       write.csv(
-  #         quality_assessment,
-  #         "data/processed/genomic/assembly_quality.csv",
-  #         row.names = FALSE
-  #       )
-        
-  #       quality_assessment
-  #     } else {
-  #       NULL
-  #     }
-  #   }
-  # ),
-  # # 3. Create phylostratigraphic maps for gene age analysis
-  # tar_target(
-  #   phylostrat_maps,
-  #   {
-  #     message("Creating phylostratigraphic maps...")
-      
-  #     phylostrat_results <- list()
-      
-  #     # Only create maps for species with available genomic data
-  #     if (!is.null(genomic_sequences$cds)) {
-  #       for (species in names(genomic_sequences$cds)) {
-  #         if (genomic_sequences$cds[[species]]$status == "success") {
-            
-  #           phylostrat_map <- create_phylostratigraphic_map(
-  #             species = species,
-  #             genome_file = genomic_sequences$cds[[species]]$file,
-  #             out_dir = "data/processed/phylostrat"
-  #           )
-            
-  #           if (!is.null(phylostrat_map)) {
-  #             phylostrat_results[[species]] <- phylostrat_map
-  #           }
-  #         }
-  #       }
-  #     }
-      
-  #     phylostrat_results
-  #   }
-  # ),
-  
-  # # 4. Integrate metagenomic data with occurrence data
-  # tar_target(
-  #   integrated_metagenomic_data,
-  #   {
-  #     message("Integrating metagenomic and occurrence data...")
-      
-  #     # Prepare genomic data summary
-  #     genomic_summary <- list()
-      
-  #     if (!is.null(genomic_sequences)) {
-  #       for (species in MARINE_SPECIES) {
-  #         genomic_summary[[species]] <- list(
-  #           cds_available = !is.null(genomic_sequences$cds[[species]]) &&
-  #                          genomic_sequences$cds[[species]]$status == "success",
-  #           proteome_available = !is.null(genomic_sequences$proteome[[species]]) &&
-  #                               genomic_sequences$proteome[[species]]$status == "success",
-  #           quality = if (!is.null(assembly_statistics)) {
-  #             quality_row <- assembly_statistics[assembly_statistics$species == species, ]
-  #             if (nrow(quality_row) > 0) quality_row$overall_quality else NA
-  #           } else {
-  #             NA
-  #           }
-  #         )
-  #       }
-  #     }
-      
-  #     # Integrate with occurrence data
-  #     integrated_data <- integrate_metagenomic_occurrences(
-  #       occurrence_data = cleaned_occurrences,
-  #       genomic_data = genomic_summary,
-  #       taxonomic_data = taxonomic_data
-  #     )
-      
-  #     integrated_data
-  #   }
-  # ),
-  
-  # # 5. Generate conservation priorities based on metagenomic data
-  # tar_target(
-  #   metagenomic_conservation_priorities,
-  #   {
-  #     message("Generating metagenomic-based conservation priorities...")
-      
-  #     priorities <- generate_metagenomic_priorities(
-  #       integrated_data = integrated_metagenomic_data,
-  #       criteria = list(
-  #         genome_available = 10,
-  #         high_quality = 5,
-  #         rare_species = 15,
-  #         evolutionary_unique = 20
-  #       )
-  #     )
-      
-  #     # Save priorities
-  #     if (!is.null(priorities)) {
-  #       write.csv(
-  #         priorities,
-  #         "data/processed/conservation/metagenomic_priorities.csv",
-  #         row.names = FALSE
-  #       )
-  #     }
-      
-  #     priorities
-  #   }
-  # ),
-  
-  # # 6. Evolutionary transcriptomics analysis (if expression data available)
-  # tar_target(
-  #   evolutionary_transcriptomics,
-  #   {
-  #     message("Note: Evolutionary transcriptomics requires expression data")
-  #     message("This is a placeholder for when expression data becomes available")
-      
-  #     # Placeholder for future implementation
-  #     # Would require RNAseq or microarray data
-      
-  #     list(
-  #       status = "not_implemented",
-  #       message = "Requires expression data for phylostratigraphic expression sets"
-  #     )
-  #   }
-  # ),
   # === DATA CLEANING PHASE ===
   # 4. Clean and validate occurrence data
   tar_target(
@@ -924,23 +704,5 @@ list(
     reporte_biodiversidad,
     path = "./reportes/analisis_biodiversidad_marina.qmd",
     quiet = FALSE
-  ),
-  
-  # === QUALITY CONTROL PHASE ===
-  # 4. Run FastQC for quality control
-  # This target takes the raw FASTQ files and runs FastQC on them.
-  # It returns the paths to the generated FastQC zip files.
-  tar_target(
-    fastqc_reports,
-    run_fastqc(raw_metagenomic_files),
-    format = "file"
-  ),
-
-  # 5. Aggregate FastQC reports
-  # This target aggregates the FastQC reports into a single summary file.
-  tar_target(
-    fastqc_summary,
-    aggregate_fastqc_reports(fastqc_reports),
-    format = "file"
   )
 )
