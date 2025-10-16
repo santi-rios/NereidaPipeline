@@ -1223,3 +1223,56 @@ plot_beta_diversity <- function(beta_results_file) {
   # Convert to plotly and return the object
   ggplotly(p)
 }
+
+#' @title Plot Taxonomic Composition
+#' @description Creates an interactive stacked bar plot of taxonomic composition.
+#' @param physeq A phyloseq object.
+#' @param rank The taxonomic rank to aggregate to (e.g., "Phylum", "Genus").
+#' @param n_taxa The number of top taxa to display. Others will be grouped into "Other".
+#' @return An interactive plotly object.
+#' @export
+plot_taxonomic_composition <- function(physeq, rank = "Phylum", n_taxa = 10) {
+  library(ggplot2)
+  library(plotly)
+  library(dplyr)
+
+  # 1. Aggregate to the specified rank
+  physeq_glom <- phyloseq::tax_glom(physeq, taxrank = rank, NArm = FALSE)
+
+  # 2. Transform to relative abundance
+  physeq_rel <- phyloseq::transform_sample_counts(physeq_glom, function(x) x / sum(x))
+
+  # 3. Melt to a long data frame
+  df_long <- phyloseq::psmelt(physeq_rel)
+
+  # 4. Identify top N taxa
+  top_taxa <- df_long %>%
+    group_by(!!sym(rank)) %>%
+    summarise(MeanAbundance = mean(Abundance)) %>%
+    arrange(desc(MeanAbundance)) %>%
+    top_n(n_taxa, MeanAbundance) %>%
+    pull(!!sym(rank))
+
+  # 5. Group less abundant taxa into "Other"
+  df_long <- df_long %>%
+    mutate(Taxon = ifelse(!!sym(rank) %in% top_taxa, as.character(!!sym(rank)), "Other"))
+
+  # 6. Create the plot
+  p <- ggplot(df_long, aes(x = Sample, y = Abundance, fill = Taxon)) +
+    geom_bar(stat = "identity", position = "stack") +
+    facet_grid(~ Group, scales = "free_x", space = "free_x") +
+    labs(
+      title = paste("Composición Taxonómica Relativa (Nivel:", rank, ")"),
+      y = "Abundancia Relativa",
+      x = "Muestra"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8),
+      legend.title = element_text(face = "bold")
+    ) +
+    scale_fill_brewer(palette = "Paired") # Use a colorblind-friendly palette
+
+  # 7. Convert to plotly
+  ggplotly(p, tooltip = c("x", "y", "fill"))
+}

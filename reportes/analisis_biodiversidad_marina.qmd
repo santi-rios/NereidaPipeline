@@ -84,7 +84,8 @@ tar_load(
     "alpha_diversity_results",
     "alpha_diversity_shannon_plot",
     "beta_diversity_results",
-    "beta_diversity_plot"
+    "beta_diversity_plot",
+    "taxonomic_composition_plot"
   )
 )
 
@@ -248,6 +249,21 @@ if (safe_check("beta_diversity_plot")) {
 ```
 
 El resultado de la prueba PERMANOVA (mostrado en el subtítulo del gráfico) nos permite afirmar si las diferencias en la composición microbiana entre los grupos son estadísticamente significativas. Un valor de p < 0.05 sugiere que los grupos albergan comunidades microbianas distintas.
+
+### 3.2.3. Composición Taxonómica
+
+Para entender qué grupos microbianos componen las comunidades, se visualizó la abundancia relativa de los filos bacterianos más dominantes en cada muestra. Este análisis nos permite pasar de una visión abstracta de la "diversidad" a una caracterización concreta de la estructura de la comunidad.
+
+```{r}
+#| label: taxonomic-composition-plot
+#| fig-cap: "Composición relativa de los filos bacterianos más abundantes. Cada barra representa una muestra individual, agrupada por su condición experimental. Los filos con menor abundancia promedio se agrupan en la categoría 'Other'."
+
+if (safe_check("taxonomic_composition_plot")) {
+  taxonomic_composition_plot
+} else {
+  cat("Gráfico de composición taxonómica no disponible.")
+}
+```
 
 # 4. Discusión y Conclusiones
 

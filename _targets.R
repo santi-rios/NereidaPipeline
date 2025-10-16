@@ -87,6 +87,12 @@ list(
     plot_beta_diversity(beta_diversity_results)
   ),
 
+  # 5. Analyze and plot taxonomic composition
+  tar_target(
+    taxonomic_composition_plot,
+    plot_taxonomic_composition(phyloseq_object, rank = "Phylum", n_taxa = 10)
+  ),
+
   # === DATA ACQUISITION PHASE ===
   
   # 1. Collect occurrence data from multiple sources
